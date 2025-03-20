@@ -28,6 +28,7 @@ export const authOptions = {
           if (!isValid) {
             throw new Error("Invalid Password");
           }
+
           return {
             id: user._id.toString(),
             email: user.email,
@@ -55,6 +56,7 @@ export const authOptions = {
       return session;
     },
   },
+
   pages: {
     signIn: "/HomePage",
     error: "/Login",
