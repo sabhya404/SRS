@@ -7,12 +7,17 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "prepare": "chmod +x .husky/pre-commit"
+    "lint:fix": "next lint --fix",
+     "lint:strict": "next lint '*/**/*.{js,ts,tsx}'",
+     "check-types": "echo 'Skipping type checking for JavaScript project'",
+     "prettier": "prettier --write */**/*.{js,json,ts,tsx,css,md}",
+
+    "format": "prettier --write .",
+    "prepare": "husky"
   },
   "dependencies": {
     "bcrypt": "^5.1.1",
     "bcryptjs": "^3.0.2",
-    "husky": "^9.1.4",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.12.1",
     "next": "15.2.3",
@@ -25,6 +30,7 @@
     "@tailwindcss/postcss": "^4",
     "eslint": "^9",
     "eslint-config-next": "15.2.3",
+    "husky": "^9.1.4",
     "prettier": "^3.5.3",
     "tailwindcss": "^4"
   }

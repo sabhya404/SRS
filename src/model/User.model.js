@@ -1,4 +1,6 @@
 import mongoose from "mongoose";
+import Member from "./Member.model";
+import Ticket from "./Ticket.model";
 const userSchema = new mongoose.Schema(
   {
     //for authantication
