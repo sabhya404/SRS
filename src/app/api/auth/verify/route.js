@@ -1,9 +1,16 @@
 import { connectDB } from "@/dbConnect";
+import User from "@/model/User.model";
+import { NextResponse } from "next/server";
+import jwt from "jsonwebtoken";
+// In /api/auth/verify/route.js
 export async function POST(request) {
   try {
-    const { email, verifyCode } = await request.json();
+    const { OTPtoken, verifyCode } = await request.json();
 
     await connectDB();
+    const usertoken = jwt.decode(OTPtoken, process.env.OTPJWTKEY);
+    console.log(usertoken.newUser.email);
+    const email = usertoken.newUser.email;
 
     const user = await User.findOne({ email });
     if (!user) {
@@ -25,14 +32,16 @@ export async function POST(request) {
       );
     }
 
-    // Update user to verified
+    // Update user to verified and active
     user.emailVerified = true;
-    user.verifyCode = undefined;
-    user.verifyCodeExpiry = undefined;
+    user.isActive = true;
     await user.save();
 
     return NextResponse.json(
-      { success: true, message: "Email verified successfully" },
+      {
+        success: true,
+        message: "Email verified successfully. You can now log in.",
+      },
       { status: 200 }
     );
   } catch (error) {

@@ -1,5 +1,6 @@
 import { resend } from "@/lib/resend";
 import VerificationEmail from "../../emails/verificationEmail";
+import User from "@/model/User.model";
 
 export async function sendVerificationEmail(email, username, verifyCode) {
   try {

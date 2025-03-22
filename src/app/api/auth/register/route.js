@@ -1,12 +1,11 @@
-import { NextResponse } from "next/server";
 import { connectDB } from "@/dbConnect/index";
+import { NextResponse } from "next/server";
 import User from "@/model/User.model";
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
 import { sendVerificationEmail } from "@/helpers/sendVerificationEmail";
-
 export async function POST(request) {
   try {
-    // fill details
     const { username, email, password } = await request.json();
     if (!email || !password) {
       return NextResponse.json(
@@ -34,17 +33,18 @@ export async function POST(request) {
     const expiryDate = new Date();
     expiryDate.setHours(expiryDate.getHours() + 1);
 
-    // Save new user
+    // Save new user with inactive status
     const newUser = new User({
       username,
       email,
       password: hashedPassword,
       verifyCode,
       verifyCodeExpiry: expiryDate,
+      emailVerified: false, // Ensure this is explicitly set
+      isActive: false, // Add this field to your model
     });
     await newUser.save();
-
-    console.log(email, password, verifyCode);
+    const tokenOTP = jwt.sign({ newUser }, process.env.OTPJWTKEY);
 
     // Send verification email
     const emailResponse = await sendVerificationEmail(email, verifyCode);
@@ -59,7 +59,9 @@ export async function POST(request) {
       {
         success: true,
         message:
-          "User Registered Successfully. Please check your email for verification code.",
+          "Verification code sent to your email. Please verify to complete registration.",
+        email: email, // Send back email for the verification page
+        OTPtoken: tokenOTP,
       },
       { status: 201 }
     );
