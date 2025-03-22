@@ -15,7 +15,7 @@ const ticketSchema = new mongoose.Schema(
     },
     members: [
       {
-        type: Schema.Types.ObjectId,
+        type: mongoose.Schema.Types.ObjectId,
         ref: "User.members",
         required: function () {
           return this.issuedFor === "Member";
