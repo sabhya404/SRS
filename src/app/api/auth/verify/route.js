@@ -2,7 +2,7 @@ import { connectDB } from "@/dbConnect";
 import User from "@/model/User.model";
 import { NextResponse } from "next/server";
 import jwt from "jsonwebtoken";
-// In /api/auth/verify/route.js
+
 export async function POST(request) {
   try {
     const { OTPtoken, verifyCode } = await request.json();

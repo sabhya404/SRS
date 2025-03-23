@@ -4,6 +4,7 @@ import User from "@/model/User.model";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { sendVerificationEmail } from "@/helpers/sendVerificationEmail";
+
 export async function POST(request) {
   try {
     const { username, email, password } = await request.json();
@@ -44,6 +45,7 @@ export async function POST(request) {
       isActive: false, // Add this field to your model
     });
     await newUser.save();
+    //generate token for otp verification url
     const tokenOTP = jwt.sign({ newUser }, process.env.OTPJWTKEY);
 
     // Send verification email

@@ -13,10 +13,11 @@ export async function middleware(request) {
   // Create a response to modify if needed
   const response = NextResponse.next();
 
-  // Check if user is authenticated but not verified
-  // if (token && !token.emailVerified && !url.pathname.startsWith("/verify")) {
-  //   return NextResponse.redirect(new URL("/verify", request.url)); 9
-  // }
+  //Check if user is authenticated but not verified
+  if (token && !token.emailVerified && !url.pathname.startsWith("/verify")) {
+    return NextResponse.redirect(new URL("/verify", request.url));
+    9;
+  }
 
   // Redirect logged-in and verified users away from authentication pages
   if (
