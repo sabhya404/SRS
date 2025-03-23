@@ -10,14 +10,14 @@ function Page() {
       <button
         onClick={() => {
           signIn("credentials", {
-            email: "test2@xample.com",
-            password: "Test@123",
+            email: "agarwalsabhya44@gmail.com",
+            password: "123123",
           });
 
           router.push("/HomePage");
         }}
       >
-        singn in
+        sign in
       </button>
     </div>
   );

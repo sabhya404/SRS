@@ -28,12 +28,10 @@ export const authOptions = {
           if (!isValid) {
             throw new Error("Invalid Password");
           }
-
-          return {
-            id: user._id.toString(),
-            email: user.email,
-            databaseId: user._id.toString(),
-          };
+          if (!user.emailVerified) {
+            throw new Error("Please verify your email before logging in");
+          }
+          return user;
         } catch (error) {
           throw error;
         }
@@ -43,8 +41,9 @@ export const authOptions = {
 
   callbacks: {
     async jwt({ token, user }) {
-      if (user?.databaseId) {
-        token.id = user.databaseId;
+      if (user) {
+        token.id = user._id;
+        token.emailVerified = user.emailVerified;
       }
       return token;
     },
@@ -52,6 +51,7 @@ export const authOptions = {
     async session({ session, token }) {
       if (session.user) {
         session.user.id = token.id;
+        session.user.emailVerified = token.emailVerified;
       }
       return session;
     },
