@@ -1,4 +1,3 @@
-// In /app/Verify/page.js
 "use client";
 
 import { useState } from "react";
@@ -46,7 +45,7 @@ export default function VerifyPage() {
         <div className="text-center">
           <h1 className="text-2xl font-bold">Verify Your Email</h1>
           <p className="mt-2">
-            We've sent a verification code to {email}. Please enter it below.
+            We have sent a verification code to {email}. Please enter it below.
           </p>
         </div>
 
@@ -89,7 +88,7 @@ export default function VerifyPage() {
 
         <div className="text-center mt-4">
           <p className="text-sm text-gray-600">
-            Didn't receive the code?{" "}
+            Didnt receive the code?{" "}
             <button
               className="text-blue-600 hover:text-blue-800"
               onClick={() => {
