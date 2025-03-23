@@ -4,6 +4,10 @@ import Ticket from "./Ticket.model";
 const userSchema = new mongoose.Schema(
   {
     //for authantication
+    username: {
+      type: String,
+      required: true,
+    },
     email: {
       type: String,
       required: true,
@@ -15,15 +19,21 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: [true, "Password is required"],
     },
-    resetToken: {
-      type: String,
-    },
-    resetTokenExpiry: {
+    // resetToken: {
+    //   type: String,
+    //   default: null,
+    // },
+    // resetTokenExpiry: {
+    //   type: Date,
+    //   default: null,
+    // },
+    verifyCode: { type: String, required: [true, "Verify Code is required"] },
+    verifyCodeExpiry: {
       type: Date,
+      required: [true, "Verify Code Expiry is required"],
     },
-    otpCode: { type: String },
-    otpExpiry: { type: Date },
     emailVerified: { type: Boolean, default: false },
+    isActive: { type: Boolean, default: false },
     //for personal details
     /*firstName: { type: String, required: true },
     lastName: {
@@ -44,19 +54,19 @@ const userSchema = new mongoose.Schema(
       enum: ["Male", "Female", "Other", "Prefer not to say"],
     },*/
     //for member
-    members: [Member],
-    // members: [
-    //   {
-    //     type: mongoose.Schema.Types.ObjectId,
-    //     ref: "Member",
-    //   },
-    // ],
+    // members: [Member],
+    members: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Member",
+      },
+    ],
     //for ticket
-    tickets: [Ticket],
-    // tickets: {
-    //   type: [mongoose.Schema.Types.ObjectId],
-    //   ref: "Ticket",
-    // },
+    // tickets: [Ticket],
+    tickets: {
+      type: [mongoose.Schema.Types.ObjectId],
+      ref: "Ticket",
+    },
     //for event listing
     //have to make changes according to give details
     isOrganizer: { type: Boolean, default: false },
@@ -74,7 +84,6 @@ const userSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
-userSchema.index({ email: 1 });
 
 // Export User model
 const User = mongoose.models.User || mongoose.model("User", userSchema);

@@ -8,22 +8,24 @@
     "start": "next start",
     "lint": "next lint",
     "lint:fix": "next lint --fix",
-     "lint:strict": "next lint '*/**/*.{js,ts,tsx}'",
-     "check-types": "echo 'Skipping type checking for JavaScript project'",
-     "prettier": "prettier --write */**/*.{js,json,ts,tsx,css,md}",
-
+    "lint:strict": "next lint '*/**/*.{js,ts,tsx}'",
+    "check-types": "echo 'Skipping type checking for JavaScript project'",
+    "prettier": "prettier --write */**/*.{js,json,ts,tsx,css,md}",
     "format": "prettier --write .",
     "prepare": "husky"
   },
   "dependencies": {
+    "@react-email/components": "^0.0.34",
     "bcrypt": "^5.1.1",
     "bcryptjs": "^3.0.2",
+    "framer-motion": "^12.5.0",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.12.1",
     "next": "15.2.3",
     "next-auth": "^4.24.11",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "resend": "^4.1.2"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
