@@ -8,9 +8,9 @@ export async function POST(request) {
     const { OTPtoken, verifyCode } = await request.json();
 
     await connectDB();
-    const usertoken = jwt.decode(OTPtoken, process.env.OTPJWTKEY);
-    console.log(usertoken.newUser.email);
-    const email = usertoken.newUser.email;
+    const decoded = jwt.verify(OTPtoken, process.env.OTPJWTKEY);
+    //console.log(usertoken.newUser.email);
+    const email = decoded.newUser.email;
 
     const user = await User.findOne({ email });
     if (!user) {
@@ -21,7 +21,7 @@ export async function POST(request) {
     if (user.verifyCode !== verifyCode) {
       return NextResponse.json(
         { error: "Invalid verification code" },
-        { status: 400 }
+        { status: 401 }
       );
     }
 

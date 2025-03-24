@@ -1,38 +1,58 @@
 // File: VerifyEmailStep.tsx
-import React, { ChangeEvent, FormEvent } from "react";
+import React, { useState } from "react";
 import { CheckCircle2 } from "lucide-react";
-import { newUser } from "./RegisterForm";
 
 function VerifyEmailStep({
   newUser,
   handleExtendedChange,
-  handleFinalSubmit,
   sendVerificationCode,
   loading,
   prevStep,
+  OTPtoken,
+  onClose,
+  onLoginClick,
 }) {
+  const [message, setMessage] = useState("");
+  const [isVerifying, setIsVerifying] = useState(false);
   const verify = async (e) => {
     e.preventDefault();
 
     try {
       const response = await axios.post("/api/auth/verify", {
+        OTPtoken: OTPtoken,
         verifyCode: newUser.verificationCode,
       });
-
-      if (response.status === 201) {
-        setMessage("Registration successful!");
-        nextStep();
+      // console.log("check verify");
+      if (response.status === 200) {
+        setMessage("Verification Successfull!");
+        setTimeout(() => {
+          onClose(); // Close registration modal
+          onLoginClick(); // Redirect to login page
+        }, 2000);
       } else {
         setMessage(response.data.message || "Something went wrong.");
       }
     } catch (error) {
       setMessage(error.response?.data?.message || "Network error. Try again.");
+    } finally {
+      setIsVerifying(false);
     }
   };
   return (
     <>
       <h3 className="text-2xl font-semibold mb-4">Verify Your Email</h3>
-      <form onSubmit={handleFinalSubmit} className="space-y-4">
+      {message && (
+        <div
+          className={`p-3 rounded-md mb-4 ${
+            message.includes("complete")
+              ? "bg-green-100 text-green-700"
+              : "bg-red-100 text-red-700"
+          }`}
+        >
+          {message}
+        </div>
+      )}
+      <form onSubmit={verify} className="space-y-4">
         <div className="text-center mb-4">
           <p className="mb-4">We have sent a verification code to:</p>
           <p className="font-semibold text-lg">{newUser.email}</p>
@@ -69,7 +89,6 @@ function VerifyEmailStep({
             Back
           </button>
           <button
-            onClick={verify}
             type="submit"
             disabled={loading}
             className="w-1/3 bg-[#646ecb] text-white py-2 rounded-md font-medium hover:bg-[#4d59c6] transition duration-200 flex items-center justify-center"
@@ -82,5 +101,6 @@ function VerifyEmailStep({
     </>
   );
 }
+import axios from "axios";
 
 export default VerifyEmailStep;

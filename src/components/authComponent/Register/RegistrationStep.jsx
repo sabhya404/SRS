@@ -17,7 +17,11 @@ function RegistrationStep({
   const [message, setMessage] = useState("");
   const handleSubmit = async (e) => {
     e.preventDefault();
-
+    //igc
+    if (newUser.password !== newUser.confirmPassword) {
+      setMessage("Passwords do not match");
+      return;
+    }
     try {
       const response = await axios.post("/api/auth/register", {
         username: newUser.username,
@@ -27,6 +31,8 @@ function RegistrationStep({
 
       if (response.status === 201) {
         setMessage("Registration successful!");
+        console.log("going to the next step");
+        nextStep(response.data.OTPtoken);
       } else {
         setMessage(response.data.message || "Something went wrong.");
       }
@@ -38,7 +44,7 @@ function RegistrationStep({
     <>
       <h3 className="text-2xl font-semibold mb-4">Create Account</h3>
       {message && <p className="text-red-500 mb-4">{message}</p>}
-      <form onSubmit={nextStep} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-4">
         <input
           type="text"
           name="username"

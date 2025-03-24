@@ -14,10 +14,6 @@ const Stepper = ({ currentStep }) => {
           <span className="mt-2 text-sm">Registration</span>
         </div>
 
-        {/* <div
-          className={`flex-1 h-1 mx-2 mb-8 ${currentStep >= 2 ? "bg-[#646ecb]" : "bg-gray-200"}`}
-        ></div> */}
-
         <div
           className={`flex-1 h-1 mx-2 mb-8 ${currentStep >= 2 ? "bg-[#646ecb]" : "bg-gray-200"}`}
         ></div>

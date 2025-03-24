@@ -20,6 +20,7 @@ const RegisterForm = ({
 }) => {
   // Track the current step
   const [currentStep, setCurrentStep] = useState(1);
+  const [OTPtoken, setOTPtoken] = useState("");
 
   // Local state for form data
   const [newUser, setNewUser] = useState({
@@ -42,7 +43,13 @@ const RegisterForm = ({
   };
 
   // Function to navigate to next step
-  const nextStep = () => setCurrentStep((prev) => Math.min(prev + 1, 2));
+  const nextStep = (token) => {
+    console.log("terui maa ka bho sada ");
+
+    setOTPtoken(token);
+    console.log(`lala lund ${currentStep}`);
+    setCurrentStep(2);
+  };
 
   // Function to navigate to previous step
   const prevStep = () => setCurrentStep((prev) => Math.max(prev - 1, 1));
@@ -101,6 +108,9 @@ const RegisterForm = ({
             sendVerificationCode={sendVerificationCode}
             loading={loading}
             prevStep={prevStep}
+            OTPtoken={OTPtoken}
+            onClose={onClose}
+            onLoginClick={onLoginClick}
           />
         )}
       </div>
