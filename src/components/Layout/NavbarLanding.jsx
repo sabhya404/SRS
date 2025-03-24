@@ -12,7 +12,7 @@ const NavbarLanding = () => {
   const [isRegisterView, setIsRegisterView] = useState(false);
   const [openLoginModal, setOpenLoginModal] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [openMobileSubMenu, setOpenMobileSubMenu] = useState(null);
+  // const [openMobileSubMenu, setOpenMobileSubMenu] = useState(null);
   const [loading, setLoading] = useState(false);
 
   // Login state
@@ -30,15 +30,15 @@ const NavbarLanding = () => {
     confirmPassword: "",
   });
 
-  const toggleMobileSubmenu = (index) => {
-    setOpenMobileSubMenu(openMobileSubMenu === index ? null : index);
-  };
+  // const toggleMobileSubmenu = (index) => {
+  //   setOpenMobileSubMenu(openMobileSubMenu === index ? null : index);
+  // };
 
   // Form validation for login
   const validateForm = () => {
     let isValid = true;
     const errors = { email: "", password: "" };
-
+    //email validation
     if (!email) {
       errors.email = "Email is required";
       isValid = false;
@@ -46,7 +46,7 @@ const NavbarLanding = () => {
       errors.email = "Please enter a valid email";
       isValid = false;
     }
-
+    //password validation
     if (!password) {
       errors.password = "Password is required";
       isValid = false;
@@ -66,6 +66,7 @@ const NavbarLanding = () => {
     setLoading(true);
 
     try {
+      //route connection
       const response = await axios.post("/api/auth/login", { email, password });
       if (response.data.success) {
         localStorage.setItem("token", response.data.token);
@@ -123,7 +124,8 @@ const NavbarLanding = () => {
       <nav className="w-full bg-white shadow-md py-1 px-6">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16 items-center">
-            <div className="md:hidden">
+            {/* mobileview */}
+            {/* <div className="md:hidden">
               <button
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                 className="inline-flex items-center justify-center p-2 rounded-md text-gray-600 hover:text-[#646ecb] hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-[#646ecb]"
@@ -135,7 +137,7 @@ const NavbarLanding = () => {
                   <Menu className="block h-6 w-6" />
                 )}
               </button>
-            </div>
+            </div> */}
 
             <div className="hidden md:flex items-center gap-4">
               <button
@@ -154,7 +156,7 @@ const NavbarLanding = () => {
           </div>
         </div>
       </nav>
-
+      {/* props for login components */}
       {openLoginModal && (
         <LoginComponent
           onClose={() => setOpenLoginModal(false)}
@@ -169,7 +171,7 @@ const NavbarLanding = () => {
           onRegisterClick={handleOpenRegister}
         />
       )}
-
+      {/* props for register */}
       {isRegisterView && (
         <RegisterForm
           onClose={() => setIsRegisterView(false)}

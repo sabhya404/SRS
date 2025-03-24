@@ -11,6 +11,24 @@ function VerifyEmailStep({
   loading,
   prevStep,
 }) {
+  const verify = async (e) => {
+    e.preventDefault();
+
+    try {
+      const response = await axios.post("/api/auth/verify", {
+        verifyCode: newUser.verificationCode,
+      });
+
+      if (response.status === 201) {
+        setMessage("Registration successful!");
+        nextStep();
+      } else {
+        setMessage(response.data.message || "Something went wrong.");
+      }
+    } catch (error) {
+      setMessage(error.response?.data?.message || "Network error. Try again.");
+    }
+  };
   return (
     <>
       <h3 className="text-2xl font-semibold mb-4">Verify Your Email</h3>
@@ -51,6 +69,7 @@ function VerifyEmailStep({
             Back
           </button>
           <button
+            onClick={verify}
             type="submit"
             disabled={loading}
             className="w-1/3 bg-[#646ecb] text-white py-2 rounded-md font-medium hover:bg-[#4d59c6] transition duration-200 flex items-center justify-center"

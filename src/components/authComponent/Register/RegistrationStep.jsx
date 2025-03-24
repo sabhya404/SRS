@@ -1,6 +1,7 @@
 // File: RegistrationStep.tsx
-import React from "react";
+import React, { useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
+import axios from "axios";
 
 function RegistrationStep({
   newUser,
@@ -13,15 +14,31 @@ function RegistrationStep({
   nextStep,
   onLoginClick,
 }) {
-  const handleSubmit = (e) => {
+  const [message, setMessage] = useState("");
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    nextStep();
-  };
 
+    try {
+      const response = await axios.post("/api/auth/register", {
+        username: newUser.username,
+        email: newUser.email,
+        password: newUser.password,
+      });
+
+      if (response.status === 201) {
+        setMessage("Registration successful!");
+      } else {
+        setMessage(response.data.message || "Something went wrong.");
+      }
+    } catch (error) {
+      setMessage(error.response?.data?.message || "Network error. Try again.");
+    }
+  };
   return (
     <>
       <h3 className="text-2xl font-semibold mb-4">Create Account</h3>
-      <form onSubmit={handleSubmit} className="space-y-4">
+      {message && <p className="text-red-500 mb-4">{message}</p>}
+      <form onSubmit={nextStep} className="space-y-4">
         <input
           type="text"
           name="username"
@@ -85,6 +102,7 @@ function RegistrationStep({
         </div>
         <div className="flex justify-center">
           <button
+            onClick={handleSubmit}
             type="submit"
             disabled={loading}
             className="w-1/2 max-w-xs bg-[#646ecb] text-white py-2 rounded-md font-medium hover:bg-[#4f5ac3] transition duration-200"

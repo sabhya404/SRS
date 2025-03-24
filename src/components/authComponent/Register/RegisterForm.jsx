@@ -1,7 +1,7 @@
 // File: RegisterForm.jsx (Main container)
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import Stepper from "../../ui/stepper";
 import RegistrationStep from "./RegistrationStep";
 import VerifyEmailStep from "./VerifyEmailStep";
