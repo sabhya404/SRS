@@ -2,11 +2,13 @@
 import React from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import NavbarLanding from "../../components/Layout/NavbarLanding";
 
 function Page() {
   const router = useRouter();
   return (
     <div>
+      <NavbarLanding />
       <button
         onClick={() => {
           signIn("credentials", {
