@@ -1,7 +1,47 @@
 import mongoose from "mongoose";
-
+// const EventTypes = [
+//   "Movie",
+//   "Music Festival",
+//   "Conference",
+//   "Sports",
+//   "Theater",
+//   "Exhibition",
+//   "Workshop",
+//   "Charity",
+//   "Comedy Show",
+//   "Other",
+// ];
+//add category schema
+const seatCategorySchema = new mongoose.Schema({
+  name: {
+    type: String,
+    required: true,
+    trim: true,
+  },
+  totalSeats: {
+    type: Number,
+    required: true,
+    min: 1,
+  },
+  reservedSeats: {
+    soldier: { type: Number, default: 0 },
+    colonel: { type: Number, default: 0 },
+    vip: { type: Number, default: 0 },
+  },
+  booked: {
+    general: { type: Number, default: 0 },
+    soldier: { type: Number, default: 0 },
+    colonel: { type: Number, default: 0 },
+    vip: { type: Number, default: 0 },
+  },
+});
 const eventSchema = new mongoose.Schema(
   {
+    organizer: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: [true, "Organizer is required"],
+    },
     title: {
       type: String,
       required: [true, "Event title is required"],
@@ -14,11 +54,16 @@ const eventSchema = new mongoose.Schema(
       trim: true,
       maxlength: [2000, "Description cannot exceed 2000 characters"],
     },
-    organizer: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      required: [true, "Organizer is required"],
+    coverImage: {
+      type: String,
+      required: [true, "Cover image is required"],
     },
+    type: {
+      type: String,
+      required: [true, "Event type is required"],
+      index: true,
+    },
+    categories: [seatCategorySchema],
     startDate: {
       type: Date,
       required: [true, "Start date is required"],
@@ -43,10 +88,6 @@ const eventSchema = new mongoose.Schema(
       address: { type: String, required: true },
       city: { type: String, required: true },
       country: { type: String, required: true },
-      coordinates: {
-        type: [Number], // [longitude, latitude]
-        index: "2dsphere",
-      },
     },
     isOnline: {
       type: Boolean,
@@ -73,22 +114,12 @@ const eventSchema = new mongoose.Schema(
         message: "Tickets sold cannot exceed capacity",
       },
     },
-    categories: {
-      type: [String],
-      required: true,
-    },
     status: {
       type: String,
       enum: ["Draft", "Published", "Cancelled", "Completed"],
       default: "Draft",
     },
-    coverImage: {
-      type: String,
-      required: [true, "Cover image is required"],
-    },
-    terms: {
-      type: [String, "terms and condition"],
-    },
+    terms: { type: [String], default: [] },
   },
   {
     timestamps: true,

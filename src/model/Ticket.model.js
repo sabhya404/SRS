@@ -6,6 +6,12 @@ const ticketSchema = new mongoose.Schema(
       ref: "Event",
       required: true,
     },
+    category: { type: String, required: true },
+    seatType: {
+      type: String,
+      enum: ["general", "soldier", "colonel", "vip"],
+      required: true,
+    },
     ticketNumber: { type: String, required: true, unique: true },
     purchaseDate: { type: Date, default: Date.now },
     BookedFor: {

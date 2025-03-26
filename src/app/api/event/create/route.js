@@ -4,7 +4,18 @@ import { authOptions } from "@/lib/auth";
 import Event from "@/model/Event.model";
 import User from "@/model/User.model";
 import { connectDB } from "@/dbConnect/index";
-
+/*algo
+database connection
+authentication check
+organiser check
+valid the request
+check categories
+field details
+create event
+save event
+event status check 
+error handling
+*/
 export async function POST(request) {
   try {
     // Database connection
@@ -19,7 +30,7 @@ export async function POST(request) {
       );
     }
 
-    // is organiser check
+    // Organizer check
     const user = await User.findById(session.user.id);
     if (!user?.isOrganizer) {
       return NextResponse.json(
@@ -31,12 +42,24 @@ export async function POST(request) {
     // Parse and validate request body
     const eventData = await request.json();
 
-    // Required fields check
+    // check and valid categories
+    if (
+      !Array.isArray(eventData.categories) ||
+      eventData.categories.length === 0
+    ) {
+      return NextResponse.json(
+        { error: "Invalid categories" },
+        { status: 400 }
+      );
+    }
+
+    // field detail and validate
     const requiredFields = [
       "title",
       "description",
       "startDate",
       "endDate",
+      "type",
       "location",
       "capacity",
     ];
@@ -59,13 +82,15 @@ export async function POST(request) {
     // Save event
     const savedEvent = await newEvent.save();
 
-    // Update user's organizer details if needed
-    if (!user.organizerDetails?.name && eventData.organizerDetails) {
-      user.organizerDetails = {
-        ...eventData.organizerDetails,
-        verificationStatus: "Pending",
-      };
-      await user.save();
+    // event status check
+    if (!user.organizerDetails || !user.organizerDetails.name) {
+      if (eventData.organizerDetails) {
+        user.organizerDetails = {
+          ...eventData.organizerDetails,
+          verificationStatus: "Pending",
+        };
+        await user.save();
+      }
     }
 
     return NextResponse.json(

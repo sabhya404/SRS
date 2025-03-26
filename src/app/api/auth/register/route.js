@@ -4,7 +4,6 @@ import User from "@/model/User.model";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { sendVerificationEmail } from "@/helpers/sendVerificationEmail";
-
 export async function POST(request) {
   try {
     const { username, email, password } = await request.json();

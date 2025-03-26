@@ -7,7 +7,21 @@ import Ticket from "@/model/Ticket.model";
 import User from "@/model/User.model";
 import Event from "@/model/Event.model";
 import { connectDB } from "@/dbConnect/index";
-
+/*algo
+connectdb
+authcheck
+if complete start transaction
+take event details
+check event
+check event capacity
+update ticket sold
+limit ticket
+ dublicate ticket for member
+ member auth
+ exist ticket check
+ generate ticket
+ save ticket
+ user ticket update*/
 export async function POST(request) {
   try {
     // Connect to database
