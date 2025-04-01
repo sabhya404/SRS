@@ -1,17 +1,24 @@
 import mongoose from "mongoose";
-// const EventTypes = [
-//   "Movie",
-//   "Music Festival",
-//   "Conference",
-//   "Sports",
-//   "Theater",
-//   "Exhibition",
-//   "Workshop",
-//   "Charity",
-//   "Comedy Show",
-//   "Other",
-// ];
-//add category schema
+
+// Subcategory schema
+const subcategorySchema = new mongoose.Schema({
+  subName: {
+    type: String,
+    required: true,
+    trim: true,
+  },
+  subSeats: {
+    type: Number,
+    required: true,
+    min: 0,
+  },
+  booked: {
+    type: Number,
+    default: 0,
+  },
+});
+
+// Seat category schema
 const seatCategorySchema = new mongoose.Schema({
   name: {
     type: String,
@@ -23,18 +30,21 @@ const seatCategorySchema = new mongoose.Schema({
     required: true,
     min: 1,
   },
-  reservedSeats: {
-    soldier: { type: Number, default: 0 },
-    colonel: { type: Number, default: 0 },
-    vip: { type: Number, default: 0 },
-  },
-  booked: {
-    general: { type: Number, default: 0 },
-    soldier: { type: Number, default: 0 },
-    colonel: { type: Number, default: 0 },
-    vip: { type: Number, default: 0 },
+  subcategories: [subcategorySchema],
+
+  // Legacy booking structure - can be used alongside subcategories during transition
+  // booked: {
+  //   general: { type: Number, default: 0 },
+  //   soldier: { type: Number, default: 0 },
+  //   colonel: { type: Number, default: 0 },
+  //   vip: { type: Number, default: 0 },
+  // },
+  // For layout
+  color: {
+    type: String,
   },
 });
+
 const eventSchema = new mongoose.Schema(
   {
     organizer: {
@@ -128,6 +138,35 @@ const eventSchema = new mongoose.Schema(
   }
 );
 
+// Pre-save validation to check subcategories total matches category total
+eventSchema.pre("save", function (next) {
+  try {
+    // Check ticket sales
+    if (this.ticketsSold > this.capacity) {
+      throw new Error("Tickets sold exceeds capacity");
+    }
+
+    // Validate subcategory seats against category total
+    for (const category of this.categories) {
+      if (category.subcategories && category.subcategories.length > 0) {
+        const subTotal = category.subcategories.reduce(
+          (sum, sub) => sum + sub.subSeats,
+          0
+        );
+        if (subTotal > category.totalSeats) {
+          throw new Error(
+            `Subcategories in "${category.name}" exceed total seats (${subTotal} > ${category.totalSeats})`
+          );
+        }
+      }
+    }
+
+    next();
+  } catch (error) {
+    next(error);
+  }
+});
+
 // Virtual for remaining tickets
 eventSchema.virtual("ticketsRemaining").get(function () {
   return this.capacity - this.ticketsSold;
@@ -138,15 +177,6 @@ eventSchema.index({ startDate: 1 });
 eventSchema.index({ "location.city": 1 });
 eventSchema.index({ categories: 1 });
 eventSchema.index({ organizer: 1 });
-
-// Pre-save validation
-eventSchema.pre("save", function (next) {
-  if (this.ticketsSold > this.capacity) {
-    const err = new Error("Tickets sold exceeds capacity");
-    return next(err);
-  }
-  next();
-});
 
 const Event = mongoose.models.Event || mongoose.model("Event", eventSchema);
 

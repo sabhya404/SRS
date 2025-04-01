@@ -1,9 +1,8 @@
 "use client";
-import EventCreator from "@/components/admincomponents/EventCreator";
 import React from "react";
 
 function page() {
-  return <div>HOmepage</div>;
+  return <div>homepage</div>;
 }
 
 export default page;
