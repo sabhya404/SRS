@@ -2,7 +2,7 @@
 import React from "react";
 
 function page() {
-  return <div>Homepage</div>;
+  return <div>homepage</div>;
 }
 
 export default page;

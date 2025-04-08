@@ -19,6 +19,7 @@ const LoginComponent = ({
       className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50"
     >
       <div
+        // stop parent triggering
         onClick={(e) => e.stopPropagation()}
         className="bg-white rounded-lg p-8 w-full max-w-md relative"
       >
