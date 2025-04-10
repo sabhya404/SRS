@@ -74,6 +74,31 @@ const eventSchema = new mongoose.Schema(
       index: true,
     },
     categories: [seatCategorySchema],
+    venueLayout: {
+      sections: [
+        {
+          sectionId: String,
+          name: String,
+          shape: { type: String, enum: ["rectangle", "circle"] },
+          rows: Number,
+          cols: Number,
+          seats: [
+            {
+              seatId: String,
+              category: String,
+              subcategory: String,
+              coordinates: { x: Number, y: Number },
+              status: {
+                type: String,
+                enum: ["available", "booked"],
+                default: "available",
+              },
+            },
+          ],
+        },
+      ],
+      layoutComplete: { type: Boolean, default: false },
+    },
     startDate: {
       type: Date,
       required: [true, "Start date is required"],
