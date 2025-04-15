@@ -8,7 +8,7 @@ export async function GET(request, { params }) {
 
   // Extract eventId from params directly
   // This is still supported in the current version
-  const { eventId } = params;
+  const { eventId } = await params;
 
   try {
     const event = await Event.findById(eventId).populate("organizer").lean();
