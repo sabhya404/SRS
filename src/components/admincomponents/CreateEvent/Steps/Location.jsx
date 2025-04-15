@@ -1,7 +1,43 @@
 "use client";
+import { useEffect, useState } from "react";
 import { MapPin } from "lucide-react";
+import dynamic from "next/dynamic";
+
+// Dynamically load map client-side only
+const GoogleMapView = dynamic(() => import("../../googlemapview.client"), {
+  ssr: false,
+});
 
 export const LocationStep = ({ formData, setFormData, prevStep, nextStep }) => {
+  const [coordinates, setCoordinates] = useState(null);
+
+  useEffect(() => {
+    const fetchCoordinates = async () => {
+      const { address, city, country } = formData.location;
+      const fullAddress = `${address}, ${city}, ${country}`;
+
+      if (address && city && country) {
+        try {
+          const response = await fetch(
+            `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(
+              fullAddress
+            )}&key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}`
+          );
+          const data = await response.json();
+
+          if (data.results[0]) {
+            const { lat, lng } = data.results[0].geometry.location;
+            setCoordinates({ lat, lng });
+          }
+        } catch (err) {
+          console.error("Geocoding failed:", err);
+        }
+      }
+    };
+
+    fetchCoordinates();
+  }, [formData.location]);
+
   return (
     <div className="space-y-6">
       <h3 className="text-xl font-semibold border-b pb-3 flex items-center">
@@ -79,11 +115,15 @@ export const LocationStep = ({ formData, setFormData, prevStep, nextStep }) => {
       </div>
 
       <div className="rounded-lg overflow-hidden">
-        <img
-          src="/api/placeholder/800/240"
-          alt="Map placeholder"
-          className="w-full h-40 object-cover"
-        />
+        {coordinates ? (
+          <GoogleMapView lat={coordinates.lat} lng={coordinates.lng} />
+        ) : (
+          <img
+            src="/api/placeholder/800/240"
+            alt="Map placeholder"
+            className="w-full h-40 object-cover"
+          />
+        )}
       </div>
 
       <div className="pt-6 flex justify-between">
