@@ -1,13 +1,33 @@
 "use client";
-import { Calendar, Clock, Users, Image as ImageIcon, Tag } from "lucide-react";
+import { useState } from "react";
+import {
+  Calendar,
+  Clock,
+  Users,
+  Image as ImageIcon,
+  Tag,
+  Upload,
+} from "lucide-react";
+import { CldUploadWidget } from "next-cloudinary";
 
 export const BasicInfoStep = ({ formData, setFormData, preview, nextStep }) => {
+  const [uploadingImage, setUploadingImage] = useState(false);
+
+  const handleImageUpload = (result) => {
+    // Handle successful upload
+    if (result.event === "success") {
+      const { secure_url } = result.info;
+      setFormData({ ...formData, coverImage: secure_url });
+      setUploadingImage(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <h3 className="text-xl font-semibold border-b pb-3">Basic Information</h3>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
+        <label className=" text-sm font-medium text-gray-700 mb-2">
           Event Title
         </label>
         <input
@@ -21,7 +41,7 @@ export const BasicInfoStep = ({ formData, setFormData, preview, nextStep }) => {
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
+        <label className=" text-sm font-medium text-gray-700 mb-2">
           Event Description
         </label>
         <textarea
@@ -37,7 +57,7 @@ export const BasicInfoStep = ({ formData, setFormData, preview, nextStep }) => {
 
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2  items-center">
+          <label className=" text-sm font-medium text-gray-700 mb-2 flex items-center">
             <Calendar className="w-4 h-4 mr-2" />
             Start Date & Time
           </label>
@@ -52,7 +72,7 @@ export const BasicInfoStep = ({ formData, setFormData, preview, nextStep }) => {
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2 items-center">
+          <label className=" text-sm font-medium text-gray-700 mb-2 flex items-center">
             <Clock className="w-4 h-4 mr-2" />
             End Date & Time
           </label>
@@ -70,7 +90,7 @@ export const BasicInfoStep = ({ formData, setFormData, preview, nextStep }) => {
 
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2 items-center">
+          <label className=" text-sm font-medium text-gray-700 mb-2 flex items-center">
             <Tag className="w-4 h-4 mr-2" />
             Event Type
           </label>
@@ -88,7 +108,7 @@ export const BasicInfoStep = ({ formData, setFormData, preview, nextStep }) => {
           </select>
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2 items-center">
+          <label className=" text-sm font-medium text-gray-700 mb-2 flex items-center">
             <Users className="w-4 h-4 mr-2" />
             Total Capacity
           </label>
@@ -110,31 +130,51 @@ export const BasicInfoStep = ({ formData, setFormData, preview, nextStep }) => {
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2 items-center">
+        <label className=" text-sm font-medium text-gray-700 mb-2 flex items-center">
           <ImageIcon className="w-4 h-4 mr-2" />
-          Cover Image URL
+          Cover Image
         </label>
         <div className="grid grid-cols-3 gap-4">
           <div className="col-span-2">
-            <input
-              type="string"
-              value={formData.coverImage}
-              onChange={(e) =>
-                setFormData({ ...formData, coverImage: e.target.value })
-              }
-              required
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
-              placeholder="Enter URL for event cover image"
-            />
+            <CldUploadWidget
+              uploadPreset={process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET}
+              onSuccess={handleImageUpload}
+              options={{
+                maxFiles: 1,
+                resourceType: "image",
+              }}
+            >
+              {({ open }) => (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setUploadingImage(true);
+                    open();
+                  }}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition flex items-center justify-center bg-white hover:bg-gray-50"
+                >
+                  <Upload className="w-4 h-4 mr-2" />
+                  {uploadingImage
+                    ? "Uploading..."
+                    : formData.coverImage
+                      ? "Change Image"
+                      : "Upload Image"}
+                </button>
+              )}
+            </CldUploadWidget>
+            {formData.coverImage && (
+              <div className="mt-2 text-xs text-gray-500 truncate">
+                {formData.coverImage}
+              </div>
+            )}
           </div>
           <div className="col-span-1 flex items-center justify-center">
-            {preview ? (
+            {formData.coverImage ? (
               <div className="h-16 w-full rounded-lg bg-gray-100 overflow-hidden">
                 <img
-                  src={preview}
+                  src={formData.coverImage}
                   alt="Preview"
                   className="w-full h-full object-cover"
-                  // onError={() => setpreview("")}
                 />
               </div>
             ) : (
