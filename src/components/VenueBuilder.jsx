@@ -1,381 +1,689 @@
+// app/venue-builder/page.jsx
 "use client";
-import { useEffect, useState } from "react";
-import axios from "axios";
-import { useRouter } from "next/navigation";
 
-const VenueBuilder = ({ eventId, categories, capacity }) => {
+import { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Slider } from "@/components/ui/slider";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { toast } from "@/components/ui/use-toast";
+
+export default function VenueBuilder() {
   const router = useRouter();
-  const [sections, setSections] = useState([]);
-  const [selectedCategory, setSelectedCategory] = useState(
-    categories[0]?.name || ""
-  );
-  const [selectedSubcategory, setSelectedSubcategory] = useState("");
-  const [sectionType, setSectionType] = useState("rectangle");
-  const [rows, setRows] = useState(5);
-  const [cols, setCols] = useState(10);
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
-  const [isSaving, setIsSaving] = useState(false);
+  const searchParams = useSearchParams();
+  const eventId = searchParams.get("eventId");
 
-  // Load existing layout on mount
+  const [event, setEvent] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [venue, setVenue] = useState({
+    rows: 10,
+    cols: 10,
+    shape: "rectangle",
+    seats: [],
+  });
+  const [selectedCategory, setSelectedCategory] = useState(null);
+  const [selectedSubcategory, setSelectedSubcategory] = useState(null);
+  const [isBulkSelecting, setIsBulkSelecting] = useState(false);
+  const [selectionStart, setSelectionStart] = useState(null);
+  const [selectionEnd, setSelectionEnd] = useState(null);
+  const [zoom, setZoom] = useState(1);
+  const [categoryColors, setCategoryColors] = useState({});
+  const [subcategoryColors, setSubcategoryColors] = useState({});
+  const [seatCounts, setSeatCounts] = useState({});
+
+  // Generate unique colors for categories and subcategories
   useEffect(() => {
-    const loadLayout = async () => {
+    if (!event) return;
+
+    const catColors = {};
+    const subColors = {};
+    const counts = {};
+
+    // Generate a color for each category and subcategory
+    event.categories.forEach((category, idx) => {
+      // Base hue for this category
+      const hue = (360 / event.categories.length) * idx;
+      catColors[category._id] = `hsl(${hue}, 70%, 60%)`;
+      counts[category._id] = { total: 0 };
+
+      // Generate subcategory colors with the same hue but different saturation/lightness
+      category.subcategories.forEach((sub, subIdx) => {
+        const subHue = hue;
+        const saturation = 65 - subIdx * 10;
+        const lightness = 50 + subIdx * 8;
+        subColors[sub._id] = `hsl(${subHue}, ${saturation}%, ${lightness}%)`;
+        counts[category._id][sub._id] = 0;
+      });
+    });
+
+    setCategoryColors(catColors);
+    setSubcategoryColors(subColors);
+    setSeatCounts(counts);
+  }, [event]);
+
+  // Initialize seat grid
+  useEffect(() => {
+    if (venue.rows && venue.cols) {
+      const initialSeats = Array(venue.rows)
+        .fill()
+        .map(() =>
+          Array(venue.cols)
+            .fill()
+            .map(() => ({
+              categoryId: null,
+              subcategoryId: null,
+              status: "none", // Default status
+            }))
+        );
+      setVenue((prev) => ({ ...prev, seats: initialSeats }));
+    }
+  }, [venue.rows, venue.cols]);
+
+  // Fetch event data
+  useEffect(() => {
+    if (!eventId) return;
+
+    const fetchEvent = async () => {
       try {
-        const { data } = await axios.get(`/api/event/${eventId}`);
-        if (data.venueLayout?.sections) {
-          setSections(data.venueLayout.sections);
+        setLoading(true);
+        // Replace with your actual API endpoint
+        const response = await fetch(`/api/events/${eventId}`);
+        const data = await response.json();
+
+        if (data.success) {
+          setEvent(data.event);
+        } else {
+          toast({
+            title: "Error",
+            description: "Failed to load event data",
+            variant: "destructive",
+          });
         }
-      } catch (err) {
-        setError("Failed to load existing layout");
+      } catch (error) {
+        console.error("Error fetching event:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load event data",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
       }
     };
-    loadLayout();
+
+    fetchEvent();
   }, [eventId]);
 
-  const generateSeatId = (sectionId, row, col) => {
-    return `${sectionId}-${row}-${col}`.toUpperCase();
-  };
-
-  const generateRectangularSection = () => {
-    const sectionId = `SEC-${Date.now()}`;
-    const seats = [];
-
-    for (let row = 1; row <= rows; row++) {
-      for (let col = 1; col <= cols; col++) {
-        seats.push({
-          seatId: generateSeatId(sectionId, row, col),
-          category: selectedCategory,
-          subcategory: selectedSubcategory,
-          coordinates: { x: col * 40, y: row * 40 },
-          status: "available",
-        });
+  // Handle seat selection
+  const handleSeatClick = (rowIndex, colIndex) => {
+    if (isBulkSelecting) {
+      // Start bulk selection
+      if (!selectionStart) {
+        setSelectionStart({ row: rowIndex, col: colIndex });
+        setSelectionEnd({ row: rowIndex, col: colIndex });
+      } else {
+        // End bulk selection
+        setSelectionEnd({ row: rowIndex, col: colIndex });
+        applyBulkSelection();
+        setIsBulkSelecting(false);
+        setSelectionStart(null);
+        setSelectionEnd(null);
       }
-    }
-
-    return {
-      sectionId,
-      type: sectionType,
-      rows,
-      cols,
-      seats,
-    };
-  };
-
-  const generateCircularSection = () => {
-    const sectionId = `CIRC-${Date.now()}`;
-    const seats = [];
-    const radius = rows * 20; // rows acts as radius multiplier
-    const seatsPerRing = cols; // cols acts as seats per ring
-
-    for (let ring = 1; ring <= rows; ring++) {
-      const angleStep = (2 * Math.PI) / (seatsPerRing * ring);
-      for (let seatNum = 0; seatNum < seatsPerRing * ring; seatNum++) {
-        const angle = angleStep * seatNum;
-        seats.push({
-          seatId: `${sectionId}-R${ring}-S${seatNum}`,
-          category: selectedCategory,
-          subcategory: selectedSubcategory,
-          coordinates: {
-            x: radius * ring * Math.cos(angle) + 400,
-            y: radius * ring * Math.sin(angle) + 300,
-          },
-          status: "available",
-        });
-      }
-    }
-
-    return {
-      sectionId,
-      type: sectionType,
-      rings: rows,
-      seatsPerRing: cols,
-      seats,
-    };
-  };
-
-  const handleAddSection = () => {
-    setError("");
-    const newSection =
-      sectionType === "rectangle"
-        ? generateRectangularSection()
-        : generateCircularSection();
-
-    const totalSeats =
-      sections.reduce((sum, sec) => sum + sec.seats.length, 0) +
-      newSection.seats.length;
-
-    if (totalSeats > capacity) {
-      setError(
-        `Adding this section would exceed capacity by ${totalSeats - capacity} seats`
-      );
       return;
     }
 
-    setSections([...sections, newSection]);
-  };
+    if (!selectedCategory) {
+      toast({
+        title: "Select a category",
+        description: "Please select a category before assigning seats",
+      });
+      return;
+    }
 
-  const handleSeatClick = (sectionIndex, seatIndex) => {
-    const updatedSections = [...sections];
-    const seat = updatedSections[sectionIndex].seats[seatIndex];
+    // Update single seat
+    const newSeats = [...venue.seats];
+    const prevSeat = newSeats[rowIndex][colIndex];
 
-    // Toggle between available/reserved
-    seat.status = seat.status === "available" ? "reserved" : "available";
-    setSections(updatedSections);
-  };
+    // If seat was already assigned to this category/subcategory, toggle it off
+    if (
+      prevSeat.categoryId === selectedCategory._id &&
+      prevSeat.subcategoryId === selectedSubcategory?._id
+    ) {
+      newSeats[rowIndex][colIndex] = {
+        categoryId: null,
+        subcategoryId: null,
+        status: "none",
+      };
 
-  const handleSaveLayout = async () => {
-    setIsSaving(true);
-    setError("");
-    setSuccess("");
-
-    try {
-      const totalSeats = sections.reduce(
-        (sum, sec) => sum + sec.seats.length,
-        0
-      );
-
-      if (totalSeats !== capacity) {
-        throw new Error(
-          `Total seats (${totalSeats}) must match event capacity (${capacity})`
-        );
+      // Update counts
+      updateSeatCount(selectedCategory._id, selectedSubcategory?._id, -1);
+    } else {
+      // If seat was assigned to a different category, decrement that count
+      if (prevSeat.categoryId) {
+        updateSeatCount(prevSeat.categoryId, prevSeat.subcategoryId, -1);
       }
 
-      await axios.patch(`/api/event/${eventId}`, {
-        venueLayout: {
-          sections,
-          layoutComplete: true,
-        },
+      // Set the new category/subcategory
+      newSeats[rowIndex][colIndex] = {
+        categoryId: selectedCategory._id,
+        subcategoryId: selectedSubcategory?._id,
+        status: "available",
+      };
+
+      // Update counts
+      updateSeatCount(selectedCategory._id, selectedSubcategory?._id, 1);
+    }
+
+    setVenue((prev) => ({ ...prev, seats: newSeats }));
+  };
+
+  // Update seat count for a category/subcategory
+  const updateSeatCount = (categoryId, subcategoryId, change) => {
+    setSeatCounts((prev) => {
+      const newCounts = { ...prev };
+
+      // Update total count for the category
+      newCounts[categoryId].total += change;
+
+      // Update subcategory count if applicable
+      if (subcategoryId) {
+        newCounts[categoryId][subcategoryId] =
+          (newCounts[categoryId][subcategoryId] || 0) + change;
+      }
+
+      return newCounts;
+    });
+  };
+
+  // Apply bulk selection to multiple seats
+  const applyBulkSelection = () => {
+    if (!selectionStart || !selectionEnd || !selectedCategory) return;
+
+    const startRow = Math.min(selectionStart.row, selectionEnd.row);
+    const endRow = Math.max(selectionStart.row, selectionEnd.row);
+    const startCol = Math.min(selectionStart.col, selectionEnd.col);
+    const endCol = Math.max(selectionStart.col, selectionEnd.col);
+
+    const newSeats = [...venue.seats];
+
+    // Apply selection to all seats in the range
+    for (let r = startRow; r <= endRow; r++) {
+      for (let c = startCol; c <= endCol; c++) {
+        const prevSeat = newSeats[r][c];
+
+        // If seat was assigned to a different category, decrement that count
+        if (prevSeat.categoryId) {
+          updateSeatCount(prevSeat.categoryId, prevSeat.subcategoryId, -1);
+        }
+
+        // Set the new category/subcategory
+        newSeats[r][c] = {
+          categoryId: selectedCategory._id,
+          subcategoryId: selectedSubcategory?._id,
+          status: "available",
+        };
+
+        // Update counts
+        updateSeatCount(selectedCategory._id, selectedSubcategory?._id, 1);
+      }
+    }
+
+    setVenue((prev) => ({ ...prev, seats: newSeats }));
+  };
+
+  // Clear venue configuration
+  const clearVenue = () => {
+    if (confirm("Are you sure you want to clear all seat assignments?")) {
+      const newSeats = Array(venue.rows)
+        .fill()
+        .map(() =>
+          Array(venue.cols)
+            .fill()
+            .map(() => ({
+              categoryId: null,
+              subcategoryId: null,
+              status: "none",
+            }))
+        );
+
+      setVenue((prev) => ({ ...prev, seats: newSeats }));
+
+      // Reset seat counts
+      const resetCounts = {};
+      event.categories.forEach((category) => {
+        resetCounts[category._id] = { total: 0 };
+        category.subcategories.forEach((sub) => {
+          resetCounts[category._id][sub._id] = 0;
+        });
       });
 
-      setSuccess("Venue layout saved successfully!");
-      setTimeout(() => router.push(`/event/${eventId}`), 1500);
-    } catch (err) {
-      setError(err.response?.data?.error || err.message);
-    } finally {
-      setIsSaving(false);
+      setSeatCounts(resetCounts);
     }
   };
 
-  const currentSeats = sections.reduce((sum, sec) => sum + sec.seats.length, 0);
-  const seatsRemaining = capacity - currentSeats;
+  // Save venue configuration
+  const saveVenue = async () => {
+    try {
+      // Validate all seats are assigned according to capacity
+      for (const category of event.categories) {
+        const categoryCount = seatCounts[category._id]?.total || 0;
+        if (categoryCount !== category.totalSeats) {
+          toast({
+            title: "Validation Error",
+            description: `Category ${category.name} requires exactly ${category.totalSeats} seats (${categoryCount} assigned)`,
+            variant: "destructive",
+          });
+          return;
+        }
+
+        for (const sub of category.subcategories) {
+          const subCount = seatCounts[category._id][sub._id] || 0;
+          if (subCount !== sub.subSeats) {
+            toast({
+              title: "Validation Error",
+              description: `Subcategory ${sub.subName} requires exactly ${sub.subSeats} seats (${subCount} assigned)`,
+              variant: "destructive",
+            });
+            return;
+          }
+        }
+      }
+
+      // Create venue layout object
+      const venueLayout = {
+        eventId,
+        dimensions: {
+          rows: venue.rows,
+          cols: venue.cols,
+        },
+        shape: venue.shape,
+        seats: venue.seats,
+        categoryColors,
+        subcategoryColors,
+      };
+
+      // Save to API
+      const response = await fetch("/api/venues", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(venueLayout),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        toast({
+          title: "Success",
+          description: "Venue layout saved successfully",
+        });
+        router.push(`/events/${eventId}`);
+      } else {
+        toast({
+          title: "Error",
+          description: data.message || "Failed to save venue layout",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Error saving venue:", error);
+      toast({
+        title: "Error",
+        description: "Failed to save venue layout",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Get the color for a seat
+  const getSeatColor = (seat) => {
+    if (!seat || !seat.categoryId) {
+      return "#f0f0f0"; // Default color for empty seats
+    }
+
+    return seat.subcategoryId
+      ? subcategoryColors[seat.subcategoryId]
+      : categoryColors[seat.categoryId];
+  };
+
+  // Format counts for display
+  const formatCounts = (category) => {
+    if (!seatCounts[category._id]) return "0/0";
+    return `${seatCounts[category._id].total}/${category.totalSeats}`;
+  };
+
+  // Format subcategory counts for display
+  const formatSubCounts = (category, subcategory) => {
+    if (!seatCounts[category._id] || !seatCounts[category._id][subcategory._id])
+      return "0/0";
+    return `${seatCounts[category._id][subcategory._id]}/${subcategory.subSeats}`;
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold mb-4">Loading venue builder...</h2>
+          <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-primary mx-auto"></div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!event) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold mb-4">Event not found</h2>
+          <Button onClick={() => router.push("/events")}>Back to Events</Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="max-w-7xl mx-auto p-6 bg-white rounded-lg shadow-lg">
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Configuration Panel */}
-        <div className="lg:col-span-1 space-y-6">
-          <h1 className="text-2xl font-bold text-gray-800">
-            Venue Layout Builder
-          </h1>
+    <div className="container mx-auto py-8 px-4">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-3xl font-bold">Venue Builder: {event.title}</h1>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={clearVenue}>
+            Clear
+          </Button>
+          <Button onClick={saveVenue}>Save Layout</Button>
+        </div>
+      </div>
 
-          <div className="space-y-4 bg-gray-50 p-4 rounded-lg">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Section Type
-              </label>
-              <select
-                value={sectionType}
-                onChange={(e) => setSectionType(e.target.value)}
-                className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="rectangle">Rectangular</option>
-                <option value="circle">Circular</option>
-              </select>
-            </div>
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        {/* Left Sidebar - Controls */}
+        <div className="lg:col-span-1">
+          <Card>
+            <CardHeader>
+              <CardTitle>Venue Configuration</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="space-y-2">
+                <Label htmlFor="rows">Rows: {venue.rows}</Label>
+                <Slider
+                  id="rows"
+                  min={5}
+                  max={50}
+                  step={1}
+                  value={[venue.rows]}
+                  onValueChange={(value) =>
+                    setVenue((prev) => ({ ...prev, rows: value[0] }))
+                  }
+                />
+              </div>
 
-            {sectionType === "rectangle" ? (
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Rows
-                  </label>
-                  <input
-                    type="number"
-                    min="1"
-                    value={rows}
-                    onChange={(e) => setRows(Math.max(1, e.target.value))}
-                    className="w-full p-2 border rounded-md"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Columns
-                  </label>
-                  <input
-                    type="number"
-                    min="1"
-                    value={cols}
-                    onChange={(e) => setCols(Math.max(1, e.target.value))}
-                    className="w-full p-2 border rounded-md"
-                  />
+              <div className="space-y-2">
+                <Label htmlFor="cols">Columns: {venue.cols}</Label>
+                <Slider
+                  id="cols"
+                  min={5}
+                  max={50}
+                  step={1}
+                  value={[venue.cols]}
+                  onValueChange={(value) =>
+                    setVenue((prev) => ({ ...prev, cols: value[0] }))
+                  }
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="zoom">Zoom: {zoom.toFixed(1)}x</Label>
+                <Slider
+                  id="zoom"
+                  min={0.5}
+                  max={2}
+                  step={0.1}
+                  value={[zoom]}
+                  onValueChange={(value) => setZoom(value[0])}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Selection Mode</Label>
+                <div className="flex gap-2">
+                  <Button
+                    variant={isBulkSelecting ? "outline" : "default"}
+                    onClick={() => setIsBulkSelecting(false)}
+                    className="flex-1"
+                  >
+                    Single Seat
+                  </Button>
+                  <Button
+                    variant={isBulkSelecting ? "default" : "outline"}
+                    onClick={() => setIsBulkSelecting(true)}
+                    className="flex-1"
+                  >
+                    Bulk Select
+                  </Button>
                 </div>
               </div>
-            ) : (
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Rings
-                  </label>
-                  <input
-                    type="number"
-                    min="1"
-                    value={rows}
-                    onChange={(e) => setRows(Math.max(1, e.target.value))}
-                    className="w-full p-2 border rounded-md"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Seats per Ring
-                  </label>
-                  <input
-                    type="number"
-                    min="4"
-                    value={cols}
-                    onChange={(e) => setCols(Math.max(4, e.target.value))}
-                    className="w-full p-2 border rounded-md"
-                  />
-                </div>
-              </div>
-            )}
+            </CardContent>
+          </Card>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Category
-              </label>
-              <select
-                value={selectedCategory}
-                onChange={(e) => setSelectedCategory(e.target.value)}
-                className="w-full p-2 border rounded-md"
-              >
-                {categories.map((cat) => (
-                  <option key={cat.name} value={cat.name}>
-                    {cat.name}
-                  </option>
-                ))}
-              </select>
-            </div>
+          <Card className="mt-4">
+            <CardHeader>
+              <CardTitle>Categories</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Tabs defaultValue="categories" className="w-full">
+                <TabsList className="grid grid-cols-2 mb-4">
+                  <TabsTrigger value="categories">Categories</TabsTrigger>
+                  <TabsTrigger value="subcategories">Subcategories</TabsTrigger>
+                </TabsList>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Subcategory
-              </label>
-              <select
-                value={selectedSubcategory}
-                onChange={(e) => setSelectedSubcategory(e.target.value)}
-                className="w-full p-2 border rounded-md"
-              >
-                <option value="">None</option>
-                {categories
-                  .find((c) => c.name === selectedCategory)
-                  ?.subcategories?.map((sub) => (
-                    <option key={sub.subName} value={sub.subName}>
-                      {sub.subName}
-                    </option>
+                <TabsContent value="categories" className="space-y-4">
+                  {event.categories.map((category) => (
+                    <div
+                      key={category._id}
+                      className={`p-3 rounded-md cursor-pointer border-2 ${
+                        selectedCategory?._id === category._id
+                          ? "border-primary"
+                          : "border-transparent"
+                      }`}
+                      style={{ backgroundColor: categoryColors[category._id] }}
+                      onClick={() => {
+                        setSelectedCategory(category);
+                        setSelectedSubcategory(null);
+                      }}
+                    >
+                      <div className="flex justify-between items-center">
+                        <span className="font-medium">{category.name}</span>
+                        <span className="text-sm">
+                          {formatCounts(category)}
+                        </span>
+                      </div>
+                    </div>
                   ))}
-              </select>
-            </div>
+                </TabsContent>
 
-            <button
-              onClick={handleAddSection}
-              className="w-full bg-blue-600 text-white p-2 rounded-md hover:bg-blue-700 transition-colors"
-            >
-              Add Section
-            </button>
-          </div>
+                <TabsContent value="subcategories" className="space-y-4">
+                  {!selectedCategory ? (
+                    <div className="text-center py-4 text-gray-500">
+                      Select a category first
+                    </div>
+                  ) : (
+                    <>
+                      <div className="mb-4 p-2 bg-gray-100 rounded-md">
+                        <p className="font-medium">
+                          Selected: {selectedCategory.name}
+                        </p>
+                      </div>
 
-          {/* Progress and Status */}
-          <div className="p-4 bg-gray-50 rounded-lg">
-            <div className="flex justify-between mb-2">
-              <span className="font-medium">Seats Added:</span>
-              <span>
-                {currentSeats} / {capacity}
-              </span>
-            </div>
-            <div className="h-2 bg-gray-200 rounded-full">
-              <div
-                className="h-full bg-green-500 rounded-full transition-all"
-                style={{ width: `${(currentSeats / capacity) * 100}%` }}
-              />
-            </div>
-            {seatsRemaining > 0 && (
-              <p className="mt-2 text-sm text-gray-600">
-                {seatsRemaining} seats remaining
-              </p>
-            )}
-          </div>
-
-          {/* Legend */}
-          <div className="p-4 bg-gray-50 rounded-lg">
-            <h3 className="font-medium mb-2">Category Colors</h3>
-            <div className="space-y-2">
-              {categories.map((cat) => (
-                <div key={cat.name} className="flex items-center gap-2">
-                  <div
-                    className="w-4 h-4 rounded-sm"
-                    style={{ backgroundColor: cat.color }}
-                  />
-                  <span>{cat.name}</span>
-                </div>
-              ))}
-            </div>
-          </div>
+                      {selectedCategory.subcategories.map((sub) => (
+                        <div
+                          key={sub._id}
+                          className={`p-3 rounded-md cursor-pointer border-2 ${
+                            selectedSubcategory?._id === sub._id
+                              ? "border-primary"
+                              : "border-transparent"
+                          }`}
+                          style={{
+                            backgroundColor: subcategoryColors[sub._id],
+                          }}
+                          onClick={() => setSelectedSubcategory(sub)}
+                        >
+                          <div className="flex justify-between items-center">
+                            <span className="font-medium">{sub.subName}</span>
+                            <span className="text-sm">
+                              {formatSubCounts(selectedCategory, sub)}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </>
+                  )}
+                </TabsContent>
+              </Tabs>
+            </CardContent>
+          </Card>
         </div>
 
-        {/* Visual Preview */}
-        <div className="lg:col-span-2">
-          <div className="border rounded-lg bg-gray-50 relative min-h-[600px] overflow-hidden">
-            {sections.map((section, sectionIndex) => (
-              <div key={section.sectionId}>
-                {section.seats.map((seat, seatIndex) => {
-                  const categoryColor =
-                    categories.find((c) => c.name === seat.category)?.color ||
-                    "#ccc";
-                  return (
-                    <button
-                      key={seat.seatId}
-                      className={`absolute w-6 h-6 rounded-sm border-2 cursor-pointer transition-all ${
-                        seat.status === "reserved"
-                          ? "opacity-50 cursor-not-allowed"
-                          : "hover:scale-125"
-                      }`}
-                      style={{
-                        left: `${seat.coordinates.x}px`,
-                        top: `${seat.coordinates.y}px`,
-                        backgroundColor: categoryColor,
-                        borderColor:
-                          seat.status === "reserved"
-                            ? "#ef4444"
-                            : categoryColor,
-                      }}
-                      onClick={() => handleSeatClick(sectionIndex, seatIndex)}
-                      disabled={seat.status === "reserved"}
-                      title={`${seat.category}${seat.subcategory ? ` - ${seat.subcategory}` : ""}\n${seat.seatId}`}
-                    />
-                  );
-                })}
+        {/* Main Content - Venue Grid */}
+        <div className="lg:col-span-3">
+          <Card>
+            <CardHeader>
+              <CardTitle>Venue Layout</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-auto p-4 border rounded-md">
+                <div
+                  className="grid gap-1 mx-auto"
+                  style={{
+                    transform: `scale(${zoom})`,
+                    transformOrigin: "top left",
+                    width: "fit-content",
+                  }}
+                >
+                  {venue.seats.map((row, rowIndex) => (
+                    <div key={rowIndex} className="flex gap-1">
+                      {row.map((seat, colIndex) => (
+                        <TooltipProvider key={colIndex}>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <div
+                                className={`
+                                  w-6 h-6 rounded-sm cursor-pointer border
+                                  ${
+                                    selectionStart &&
+                                    selectionEnd &&
+                                    rowIndex >=
+                                      Math.min(
+                                        selectionStart.row,
+                                        selectionEnd.row
+                                      ) &&
+                                    rowIndex <=
+                                      Math.max(
+                                        selectionStart.row,
+                                        selectionEnd.row
+                                      ) &&
+                                    colIndex >=
+                                      Math.min(
+                                        selectionStart.col,
+                                        selectionEnd.col
+                                      ) &&
+                                    colIndex <=
+                                      Math.max(
+                                        selectionStart.col,
+                                        selectionEnd.col
+                                      )
+                                      ? "border-primary border-2"
+                                      : "border-gray-300"
+                                  }
+                                `}
+                                style={{ backgroundColor: getSeatColor(seat) }}
+                                onClick={() =>
+                                  handleSeatClick(rowIndex, colIndex)
+                                }
+                              ></div>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              {seat.categoryId
+                                ? `${event.categories.find((c) => c._id === seat.categoryId)?.name || ""} ${
+                                    seat.subcategoryId
+                                      ? `- ${
+                                          event.categories
+                                            .find(
+                                              (c) => c._id === seat.categoryId
+                                            )
+                                            ?.subcategories.find(
+                                              (s) =>
+                                                s._id === seat.subcategoryId
+                                            )?.subName || ""
+                                        }`
+                                      : ""
+                                  }`
+                                : "No seat"}
+                              <div className="text-xs">
+                                Row {rowIndex + 1}, Col {colIndex + 1}
+                              </div>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      ))}
+                    </div>
+                  ))}
+                </div>
               </div>
-            ))}
-          </div>
+            </CardContent>
+          </Card>
 
-          {/* Action Bar */}
-          <div className="mt-6 flex justify-between items-center">
-            <div className="space-y-1">
-              {error && <p className="text-red-600">{error}</p>}
-              {success && <p className="text-green-600">{success}</p>}
-            </div>
-            <button
-              onClick={handleSaveLayout}
-              disabled={isSaving || currentSeats !== capacity}
-              className="bg-green-600 text-white px-6 py-2 rounded-md hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
-            >
-              {isSaving ? "Saving..." : "Save Layout"}
-            </button>
-          </div>
+          <Card className="mt-4">
+            <CardHeader>
+              <CardTitle>Legend</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 bg-gray-200 rounded"></div>
+                  <span className="text-sm">No seat</span>
+                </div>
+
+                {event.categories.map((category) => (
+                  <div key={category._id} className="flex items-center gap-2">
+                    <div
+                      className="w-4 h-4 rounded"
+                      style={{ backgroundColor: categoryColors[category._id] }}
+                    ></div>
+                    <span className="text-sm">{category.name}</span>
+                  </div>
+                ))}
+
+                {event.categories.flatMap((category) =>
+                  category.subcategories.map((sub) => (
+                    <div key={sub._id} className="flex items-center gap-2">
+                      <div
+                        className="w-4 h-4 rounded"
+                        style={{ backgroundColor: subcategoryColors[sub._id] }}
+                      ></div>
+                      <span className="text-sm">{sub.subName}</span>
+                    </div>
+                  ))
+                )}
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>
   );
-};
-
-export default VenueBuilder;
+}
