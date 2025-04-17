@@ -1,20 +1,13 @@
-// app/venue-builder/page.jsx
+// components/VenueBuilder.jsx
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
+import axios from "axios";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Tooltip,
@@ -22,15 +15,11 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { toast } from "@/components/ui/use-toast";
 
-export default function VenueBuilder() {
+export default function VenueBuilder({ eventId, event }) {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const eventId = searchParams.get("eventId");
 
-  const [event, setEvent] = useState(null);
-  const [loading, setLoading] = useState(true);
+  // Venue state
   const [venue, setVenue] = useState({
     rows: 10,
     cols: 10,
@@ -95,41 +84,6 @@ export default function VenueBuilder() {
     }
   }, [venue.rows, venue.cols]);
 
-  // Fetch event data
-  useEffect(() => {
-    if (!eventId) return;
-
-    const fetchEvent = async () => {
-      try {
-        setLoading(true);
-        // Replace with your actual API endpoint
-        const response = await fetch(`/api/events/${eventId}`);
-        const data = await response.json();
-
-        if (data.success) {
-          setEvent(data.event);
-        } else {
-          toast({
-            title: "Error",
-            description: "Failed to load event data",
-            variant: "destructive",
-          });
-        }
-      } catch (error) {
-        console.error("Error fetching event:", error);
-        toast({
-          title: "Error",
-          description: "Failed to load event data",
-          variant: "destructive",
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchEvent();
-  }, [eventId]);
-
   // Handle seat selection
   const handleSeatClick = (rowIndex, colIndex) => {
     if (isBulkSelecting) {
@@ -149,10 +103,7 @@ export default function VenueBuilder() {
     }
 
     if (!selectedCategory) {
-      toast({
-        title: "Select a category",
-        description: "Please select a category before assigning seats",
-      });
+      alert("Please select a category first.");
       return;
     }
 
@@ -284,22 +235,16 @@ export default function VenueBuilder() {
       for (const category of event.categories) {
         const categoryCount = seatCounts[category._id]?.total || 0;
         if (categoryCount !== category.totalSeats) {
-          toast({
-            title: "Validation Error",
-            description: `Category ${category.name} requires exactly ${category.totalSeats} seats (${categoryCount} assigned)`,
-            variant: "destructive",
-          });
+          alert(
+            `Category ${category.name} requires exactly ${category.totalSeats} seats (${categoryCount} assigned)`
+          );
           return;
         }
 
         for (const sub of category.subcategories) {
           const subCount = seatCounts[category._id][sub._id] || 0;
           if (subCount !== sub.subSeats) {
-            toast({
-              title: "Validation Error",
-              description: `Subcategory ${sub.subName} requires exactly ${sub.subSeats} seats (${subCount} assigned)`,
-              variant: "destructive",
-            });
+            alert();
             return;
           }
         }
@@ -319,36 +264,19 @@ export default function VenueBuilder() {
       };
 
       // Save to API
-      const response = await fetch("/api/venues", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(venueLayout),
-      });
+      const response = await axios.post("/api/venues", venueLayout);
 
-      const data = await response.json();
-
-      if (data.success) {
-        toast({
-          title: "Success",
-          description: "Venue layout saved successfully",
-        });
-        router.push(`/events/${eventId}`);
+      if (response.data.success) {
+        console.log("Venue layout saved successfully:", response.data);
+        router.push(`/event/${eventId}`);
       } else {
-        toast({
-          title: "Error",
-          description: data.message || "Failed to save venue layout",
-          variant: "destructive",
-        });
+        alert(`Error saving venue layout: ${response.data.message}`);
       }
     } catch (error) {
       console.error("Error saving venue:", error);
-      toast({
-        title: "Error",
-        description: "Failed to save venue layout",
-        variant: "destructive",
-      });
+      alert(
+        `Error saving venue layout: ${error.response?.data?.message || error.message}`
+      );
     }
   };
 
@@ -375,28 +303,6 @@ export default function VenueBuilder() {
       return "0/0";
     return `${seatCounts[category._id][subcategory._id]}/${subcategory.subSeats}`;
   };
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold mb-4">Loading venue builder...</h2>
-          <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-primary mx-auto"></div>
-        </div>
-      </div>
-    );
-  }
-
-  if (!event) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold mb-4">Event not found</h2>
-          <Button onClick={() => router.push("/events")}>Back to Events</Button>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="container mx-auto py-8 px-4">

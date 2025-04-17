@@ -1,11 +1,12 @@
 // app/event/[eventId]/venue-builder/page.js
 "use client";
 
-import { useEffect, useState } from "react";
-import axios from "axios";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import VenueBuilder from "@/components/VenueBuilder";
+import axios from "axios";
+import { Button } from "@/components/ui/button";
 import Loader from "@/components/Loader";
+import VenueBuilder from "@/components/VenueBuilder";
 
 export default function VenueBuilderPage({ params }) {
   const router = useRouter();
@@ -13,6 +14,7 @@ export default function VenueBuilderPage({ params }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  // Fetch event data
   useEffect(() => {
     const fetchEvent = async () => {
       try {
@@ -23,11 +25,16 @@ export default function VenueBuilderPage({ params }) {
         setEvent(response.data);
       } catch (err) {
         setError(err.response?.data?.error || err.message);
+        alert(err.response?.data?.error || err.message);
+        console.error("Error fetching event:", err);
       } finally {
         setLoading(false);
       }
     };
-    fetchEvent();
+
+    if (params.eventId) {
+      fetchEvent();
+    }
   }, [params.eventId]);
 
   if (loading) {
@@ -47,12 +54,20 @@ export default function VenueBuilderPage({ params }) {
             Error Loading Event
           </h2>
           <p className="text-red-700 mb-4">{error}</p>
-          <button
-            onClick={() => router.push("/events")}
-            className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
-          >
+          <Button variant="destructive" onClick={() => router.push("/events")}>
             Back to Events
-          </button>
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!event) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold mb-4">Event not found</h2>
+          <Button onClick={() => router.push("/events")}>Back to Events</Button>
         </div>
       </div>
     );
@@ -60,11 +75,7 @@ export default function VenueBuilderPage({ params }) {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <VenueBuilder
-        eventId={params.eventId}
-        categories={event.categories}
-        capacity={event.capacity}
-      />
+      <VenueBuilder eventId={params.eventId} event={event} />
     </div>
   );
 }
