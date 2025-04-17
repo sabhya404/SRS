@@ -16,6 +16,9 @@ const subcategorySchema = new mongoose.Schema({
     type: Number,
     default: 0,
   },
+  color: {
+    type: String,
+  },
 });
 
 // Seat category schema
@@ -31,6 +34,9 @@ const seatCategorySchema = new mongoose.Schema({
     min: 1,
   },
   subcategories: [subcategorySchema],
+  color: {
+    type: String,
+  },
 
   // Legacy booking structure - can be used alongside subcategories during transition
   // booked: {
@@ -40,9 +46,6 @@ const seatCategorySchema = new mongoose.Schema({
   //   vip: { type: Number, default: 0 },
   // },
   // For layout
-  color: {
-    type: String,
-  },
 });
 
 const eventSchema = new mongoose.Schema(
@@ -74,6 +77,10 @@ const eventSchema = new mongoose.Schema(
       index: true,
     },
     categories: [seatCategorySchema],
+    hasVenueLayout: {
+      type: Boolean,
+      default: false,
+    },
     startDate: {
       type: Date,
       required: [true, "Start date is required"],
