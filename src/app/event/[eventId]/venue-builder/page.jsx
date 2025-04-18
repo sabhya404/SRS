@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import axios from "axios";
 import { Button } from "@/components/ui/button";
 import Loader from "@/components/Loader";
-import VenueBuilder from "@/components/VenueBuilder";
+import VenueBuilder from "@/components/venueBuilder/index";
 
 export default function VenueBuilderPage({ params }) {
   const router = useRouter();

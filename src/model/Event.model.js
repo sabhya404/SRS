@@ -81,6 +81,10 @@ const eventSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    venue: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Venue",
+    },
     startDate: {
       type: Date,
       required: [true, "Start date is required"],
