@@ -14,15 +14,6 @@ const seatSchema = new mongoose.Schema({
     enum: ["available", "booked", "reserved", "none"],
     default: "available",
   },
-  // Optional seat label (e.g., "A1", "B2")
-  //   label: {
-  //     type: String,
-  //   },
-  // Reference to booking if seat is booked
-  //   bookingId: {
-  //     type: mongoose.Schema.Types.ObjectId,
-  //     ref: "Booking",
-  //   },
 });
 
 const venueSchema = new mongoose.Schema(
@@ -38,7 +29,6 @@ const venueSchema = new mongoose.Schema(
     // Venue shape configuration
     shape: {
       type: String,
-      enum: ["rectangle", "circle", "custom"],
       default: "rectangle",
     },
 
@@ -66,19 +56,6 @@ const venueSchema = new mongoose.Schema(
     },
 
     // For more complex venues with multiple sections
-    sections: [
-      {
-        name: { type: String },
-        shape: { type: String, enum: ["rectangle", "circle"] },
-        position: { x: Number, y: Number },
-        rows: Number,
-        cols: Number,
-        seatStartIndex: {
-          row: Number,
-          col: Number,
-        },
-      },
-    ],
 
     // Flag to mark if layout is complete
     isLayoutComplete: {

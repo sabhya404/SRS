@@ -1,8 +1,8 @@
 // app/api/venues/route.js
 import { NextResponse } from "next/server";
 import mongoose from "mongoose";
-import Venue from "@/models/Venue.model";
-import Event from "@/models/Event.model";
+import Venue from "@/model/Venue.model";
+import Event from "@/model/Event.model";
 import { connectDB } from "@/dbConnect/index";
 
 export async function POST(request) {
@@ -33,7 +33,7 @@ export async function POST(request) {
     }
 
     // Check if venue already exists for this event
-    let venue = await Venue.findByEventId(eventId);
+    let venue = await Venue.findOne({ eventId });
 
     if (venue) {
       // Update existing venue
