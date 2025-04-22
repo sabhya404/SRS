@@ -1,13 +1,6 @@
 "use client";
 import { useCallback, useState } from "react";
-import {
-  Calendar,
-  Clock,
-  Users,
-  Image as ImageIcon,
-  Tag,
-  Upload,
-} from "lucide-react";
+import { Calendar, Users, Image as ImageIcon, Tag, Upload } from "lucide-react";
 import { CldUploadWidget } from "next-cloudinary";
 
 // This component represents the first step of a multi-step form for event creation
