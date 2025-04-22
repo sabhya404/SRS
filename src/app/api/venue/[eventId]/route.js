@@ -104,7 +104,9 @@ export async function GET(request) {
 
     await connectDB();
 
-    const venue = await Venue.findOne(new mongoose.Types.ObjectId(eventId));
+    const venue = await Venue.findByEventId(
+      new mongoose.Types.ObjectId(eventId)
+    );
 
     if (!venue) {
       return NextResponse.json(

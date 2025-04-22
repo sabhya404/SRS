@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import {
   Calendar,
   Clock,
@@ -10,24 +10,40 @@ import {
 } from "lucide-react";
 import { CldUploadWidget } from "next-cloudinary";
 
+// This component represents the first step of a multi-step form for event creation
 export const BasicInfoStep = ({ formData, setFormData, preview, nextStep }) => {
-  const [uploadingImage, setUploadingImage] = useState(false);
+  const [isImageUploading, setIsImageUploading] = useState(false);
 
-  const handleImageUpload = (result) => {
-    // Handle successful upload
-    if (result.event === "success") {
-      const { secure_url } = result.info;
-      setFormData({ ...formData, coverImage: secure_url });
-      setUploadingImage(false);
-    }
-  };
+  // Handles image upload and updates form data with the uploaded image URL
+  const handleImageUpload = useCallback(
+    (uploadResult) => {
+      // Check if the upload was successful
+      const isSuccessful = uploadResult.event === "success";
+
+      if (isSuccessful) {
+        // Get the uploaded image URL from Cloudinary's response
+        const uploadedImageUrl = uploadResult.info.secure_url;
+
+        // Save the image URL in formData
+        setFormData((prevFormData) => ({
+          ...prevFormData,
+          coverImage: uploadedImageUrl,
+        }));
+
+        // Reset uploading state
+        setIsImageUploading(false);
+      }
+    },
+    [setFormData]
+  );
 
   return (
     <div className="space-y-6">
       <h3 className="text-xl font-semibold border-b pb-3">Basic Information</h3>
 
+      {/* Event Title Input */}
       <div>
-        <label className=" text-sm font-medium text-gray-700 mb-2">
+        <label className="text-sm font-medium text-gray-700 mb-2">
           Event Title
         </label>
         <input
@@ -40,8 +56,9 @@ export const BasicInfoStep = ({ formData, setFormData, preview, nextStep }) => {
         />
       </div>
 
+      {/* Event Description Input */}
       <div>
-        <label className=" text-sm font-medium text-gray-700 mb-2">
+        <label className="text-sm font-medium text-gray-700 mb-2">
           Event Description
         </label>
         <textarea
@@ -55,9 +72,10 @@ export const BasicInfoStep = ({ formData, setFormData, preview, nextStep }) => {
         />
       </div>
 
+      {/* Start and End DateTime */}
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className=" text-sm font-medium text-gray-700 mb-2 flex items-center">
+          <label className="text-sm font-medium text-gray-700 mb-2 flex items-center">
             <Calendar className="w-4 h-4 mr-2" />
             Start Date & Time
           </label>
@@ -71,9 +89,10 @@ export const BasicInfoStep = ({ formData, setFormData, preview, nextStep }) => {
             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
           />
         </div>
+
         <div>
-          <label className=" text-sm font-medium text-gray-700 mb-2 flex items-center">
-            <Clock className="w-4 h-4 mr-2" />
+          <label className="text-sm font-medium text-gray-700 mb-2 flex items-center">
+            <Calendar className="w-4 h-4 mr-2" />
             End Date & Time
           </label>
           <input
@@ -88,9 +107,10 @@ export const BasicInfoStep = ({ formData, setFormData, preview, nextStep }) => {
         </div>
       </div>
 
+      {/* Event Type and Capacity */}
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className=" text-sm font-medium text-gray-700 mb-2 flex items-center">
+          <label className="text-sm font-medium text-gray-700 mb-2 flex items-center">
             <Tag className="w-4 h-4 mr-2" />
             Event Type
           </label>
@@ -107,8 +127,9 @@ export const BasicInfoStep = ({ formData, setFormData, preview, nextStep }) => {
             <option value="Ceremony">Ceremony</option>
           </select>
         </div>
+
         <div>
-          <label className=" text-sm font-medium text-gray-700 mb-2 flex items-center">
+          <label className="text-sm font-medium text-gray-700 mb-2 flex items-center">
             <Users className="w-4 h-4 mr-2" />
             Total Capacity
           </label>
@@ -129,32 +150,32 @@ export const BasicInfoStep = ({ formData, setFormData, preview, nextStep }) => {
         </div>
       </div>
 
+      {/* Image Upload Section */}
       <div>
-        <label className=" text-sm font-medium text-gray-700 mb-2 flex items-center">
+        <label className="text-sm font-medium text-gray-700 mb-2 flex items-center">
           <ImageIcon className="w-4 h-4 mr-2" />
           Cover Image
         </label>
+
         <div className="grid grid-cols-3 gap-4">
+          {/* Upload Button */}
           <div className="col-span-2">
             <CldUploadWidget
               uploadPreset={process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET}
               onSuccess={handleImageUpload}
-              options={{
-                maxFiles: 1,
-                resourceType: "image",
-              }}
+              options={{ maxFiles: 1, resourceType: "image" }}
             >
               {({ open }) => (
                 <button
                   type="button"
                   onClick={() => {
-                    setUploadingImage(true);
+                    setIsImageUploading(true);
                     open();
                   }}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition flex items-center justify-center bg-white hover:bg-gray-50"
                 >
                   <Upload className="w-4 h-4 mr-2" />
-                  {uploadingImage
+                  {isImageUploading
                     ? "Uploading..."
                     : formData.coverImage
                       ? "Change Image"
@@ -162,12 +183,16 @@ export const BasicInfoStep = ({ formData, setFormData, preview, nextStep }) => {
                 </button>
               )}
             </CldUploadWidget>
+
+            {/* Display uploaded image URL */}
             {formData.coverImage && (
               <div className="mt-2 text-xs text-gray-500 truncate">
                 {formData.coverImage}
               </div>
             )}
           </div>
+
+          {/* Image Preview */}
           <div className="col-span-1 flex items-center justify-center">
             {formData.coverImage ? (
               <div className="h-16 w-full rounded-lg bg-gray-100 overflow-hidden">
@@ -186,6 +211,7 @@ export const BasicInfoStep = ({ formData, setFormData, preview, nextStep }) => {
         </div>
       </div>
 
+      {/* Continue Button */}
       <div className="pt-6 flex justify-end">
         <button
           type="button"
