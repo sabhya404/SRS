@@ -2,6 +2,8 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
 import { useRouter } from "next/navigation";
+
+// Component Imports
 import { Stepper } from "@/components/admincomponents/CreateEvent/Stepper";
 import { OrganizerCheck } from "@/components/admincomponents/CreateEvent/OrganiserCheck";
 import {
@@ -11,14 +13,17 @@ import {
   ReviewSubmitStep,
 } from "../CreateEvent/Steps/steps";
 
+// Main Create Event Form Component
 const CreateEventForm = ({ isOrganizer }) => {
   const router = useRouter();
+
+  // Initialize form data
   const [formData, setFormData] = useState({
     title: "",
     description: "",
     startDate: "",
     endDate: "",
-    type: "Movie",
+    type: "Select",
     location: {
       address: "",
       city: "",
@@ -29,14 +34,15 @@ const CreateEventForm = ({ isOrganizer }) => {
     coverImage: "",
   });
 
+  // Local state variables
+  const [activeStep, setActiveStep] = useState(1);
+  const [totalSeatSum, setTotalSeatSum] = useState(0);
+  const [preview, setPreview] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-  const [totalSeatSum, setTotalSeatSum] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [activeStep, setActiveStep] = useState(1);
-  const [preview, setPreview] = useState("");
 
-  // Calculate total seats from categories
+  // Auto-calculate total number of seats based on categories
   useEffect(() => {
     const sum = formData.categories.reduce(
       (acc, category) => acc + (category.totalSeats || 0),
@@ -45,24 +51,25 @@ const CreateEventForm = ({ isOrganizer }) => {
     setTotalSeatSum(sum);
   }, [formData.categories]);
 
-  // Update image preview
+  // Generate image preview when cover image is set
   useEffect(() => {
     if (formData.coverImage) {
       setPreview(formData.coverImage);
     }
   }, [formData.coverImage]);
 
-  // Category management functions
+  // ===== Category & Subcategory Handlers =====
+
   const handleCategoryChange = (index, field, value) => {
-    const updatedCategories = [...formData.categories];
-    updatedCategories[index][field] = value;
-    setFormData({ ...formData, categories: updatedCategories });
+    const updated = [...formData.categories];
+    updated[index][field] = value;
+    setFormData({ ...formData, categories: updated });
   };
 
-  const handleSubcategoryChange = (categoryIndex, subIndex, field, value) => {
-    const updatedCategories = [...formData.categories];
-    updatedCategories[categoryIndex].subcategories[subIndex][field] = value;
-    setFormData({ ...formData, categories: updatedCategories });
+  const handleSubcategoryChange = (catIndex, subIndex, field, value) => {
+    const updated = [...formData.categories];
+    updated[catIndex].subcategories[subIndex][field] = value;
+    setFormData({ ...formData, categories: updated });
   };
 
   const addCategory = () => {
@@ -76,37 +83,36 @@ const CreateEventForm = ({ isOrganizer }) => {
   };
 
   const removeCategory = (index) => {
-    const updatedCategories = formData.categories.filter((_, i) => i !== index);
-    setFormData({ ...formData, categories: updatedCategories });
+    const updated = formData.categories.filter((_, i) => i !== index);
+    setFormData({ ...formData, categories: updated });
   };
 
-  const addSubcategory = (categoryIndex) => {
-    const updatedCategories = [...formData.categories];
-    if (!updatedCategories[categoryIndex].subcategories) {
-      updatedCategories[categoryIndex].subcategories = [];
+  const addSubcategory = (catIndex) => {
+    const updated = [...formData.categories];
+    if (!updated[catIndex].subcategories) {
+      updated[catIndex].subcategories = [];
     }
-    updatedCategories[categoryIndex].subcategories.push({
-      subName: "",
-      subSeats: 0,
-    });
-    setFormData({ ...formData, categories: updatedCategories });
+    updated[catIndex].subcategories.push({ subName: "", subSeats: 0 });
+    setFormData({ ...formData, categories: updated });
   };
 
-  const removeSubcategory = (categoryIndex, subIndex) => {
-    const updatedCategories = [...formData.categories];
-    updatedCategories[categoryIndex].subcategories = updatedCategories[
-      categoryIndex
-    ].subcategories.filter((_, i) => i !== subIndex);
-    setFormData({ ...formData, categories: updatedCategories });
+  const removeSubcategory = (catIndex, subIndex) => {
+    const updated = [...formData.categories];
+    updated[catIndex].subcategories = updated[catIndex].subcategories.filter(
+      (_, i) => i !== subIndex
+    );
+    setFormData({ ...formData, categories: updated });
   };
 
-  // Form submission handler
+  // Submit Handler
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
     setSuccess("");
     setIsSubmitting(true);
 
+    // Validate total seat sum
     if (totalSeatSum !== formData.capacity) {
       setError(
         `Total seats in categories (${totalSeatSum}) must equal event capacity (${formData.capacity})`
@@ -115,56 +121,58 @@ const CreateEventForm = ({ isOrganizer }) => {
       return;
     }
 
-    try {
-      // Validate categories
-      for (const category of formData.categories) {
-        if (!category.subcategories || category.subcategories.length === 0) {
-          setError(
-            `Category "${category.name}" must have at least one subcategory`
-          );
-          setIsSubmitting(false);
-          return;
-        }
-
-        const subSum = category.subcategories.reduce(
-          (acc, sub) => acc + (sub.subSeats || 0),
-          0
+    // Validate each category and its subcategories
+    for (const category of formData.categories) {
+      if (!category.subcategories || category.subcategories.length === 0) {
+        setError(
+          `Category "${category.name}" must have at least one subcategory`
         );
-
-        if (subSum > category.totalSeats) {
-          setError(
-            `Subcategories in "${category.name}" exceed total seats (${subSum} > ${category.totalSeats})`
-          );
-          setIsSubmitting(false);
-          return;
-        }
+        setIsSubmitting(false);
+        return;
       }
 
-      // API call
+      const subTotal = category.subcategories.reduce(
+        (acc, sub) => acc + (sub.subSeats || 0),
+        0
+      );
+
+      if (subTotal > category.totalSeats) {
+        setError(
+          `Subcategories in "${category.name}" exceed total seats (${subTotal} > ${category.totalSeats})`
+        );
+        setIsSubmitting(false);
+        return;
+      }
+    }
+
+    try {
+      // Make API request to create the event
       const response = await axios.post("/api/event/create", formData);
+
       if (response.data.success) {
         setSuccess("Event created successfully!");
         router.refresh();
       }
-    } catch (error) {
-      const errorMessage =
-        error.response?.data?.error || "Failed to create Event";
-      setError(errorMessage);
+    } catch (err) {
+      const errorMsg = err.response?.data?.error || "Failed to create Event";
+      setError(errorMsg);
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // Stepper navigation
+  //Step Navigation Handlers
+
   const nextStep = () => {
-    if (activeStep < 4) setActiveStep(activeStep + 1);
+    if (activeStep < 4) setActiveStep((prev) => prev + 1);
   };
 
   const prevStep = () => {
-    if (activeStep > 1) setActiveStep(activeStep - 1);
+    if (activeStep > 1) setActiveStep((prev) => prev - 1);
   };
 
-  // Step configurations
+  //Steps Configuration
+
   const steps = {
     1: (
       <BasicInfoStep
@@ -209,11 +217,14 @@ const CreateEventForm = ({ isOrganizer }) => {
     ),
   };
 
+  // If user is not an organizer, block access
   if (!isOrganizer) return <OrganizerCheck router={router} />;
 
+  // Render the Create Event Form
   return (
     <div className="max-w-4xl mx-auto py-8 px-4">
       <div className="bg-white shadow-lg rounded-xl overflow-hidden">
+        {/* Header */}
         <div className="px-6 py-4 bg-blue-600 text-white">
           <h2 className="text-2xl font-bold">Create New Event</h2>
           <p className="text-blue-100">
@@ -221,6 +232,7 @@ const CreateEventForm = ({ isOrganizer }) => {
           </p>
         </div>
 
+        {/* Step Content */}
         <div className="p-6">
           <Stepper activeStep={activeStep} />
           <form onSubmit={handleSubmit}>{steps[activeStep]}</form>

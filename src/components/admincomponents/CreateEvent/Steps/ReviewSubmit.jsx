@@ -1,4 +1,5 @@
 "use client";
+
 import {
   Calendar,
   Clock,
@@ -21,8 +22,11 @@ export const ReviewSubmitStep = ({
     <div className="space-y-6">
       <h3 className="text-xl font-semibold border-b pb-3">Review Event</h3>
 
+      {/* Grid layout for event overview */}
       <div className="grid grid-cols-2 gap-6">
+        {/* Left Column - Event Details */}
         <div>
+          {/* Event Date & Capacity Info */}
           <h4 className="font-medium mb-4">Event Details</h4>
           <div className="space-y-2">
             <p className="flex items-center">
@@ -30,7 +34,7 @@ export const ReviewSubmitStep = ({
               {new Date(formData.startDate).toLocaleString()}
             </p>
             <p className="flex items-center">
-              <Clock className="w-4 h-4 mr-2" />
+              <Calendar className="w-4 h-4 mr-2" />
               {new Date(formData.endDate).toLocaleString()}
             </p>
             <p className="flex items-center">
@@ -39,6 +43,7 @@ export const ReviewSubmitStep = ({
             </p>
           </div>
 
+          {/* Location Info */}
           <h4 className="font-medium mt-6 mb-4">Location</h4>
           <div className="space-y-2">
             <p className="flex items-center">
@@ -50,6 +55,7 @@ export const ReviewSubmitStep = ({
             </p>
           </div>
 
+          {/* Categories and Subcategories */}
           <h4 className="font-medium mt-6 mb-4">Categories</h4>
           <div className="space-y-2">
             {formData.categories.length === 0 ? (
@@ -72,7 +78,9 @@ export const ReviewSubmitStep = ({
           </div>
         </div>
 
+        {/* Right Column - Image, Seat Check, Description */}
         <div>
+          {/* Cover Image Preview */}
           <h4 className="font-medium mb-4">Cover Image</h4>
           <div className="aspect-video bg-gray-100 rounded-lg overflow-hidden">
             {formData.coverImage ? (
@@ -88,6 +96,7 @@ export const ReviewSubmitStep = ({
             )}
           </div>
 
+          {/* Capacity Check Section */}
           <h4 className="font-medium mt-6 mb-4">Capacity Check</h4>
           <div className="bg-blue-50 p-4 rounded-lg">
             <div className="flex items-center justify-between">
@@ -109,6 +118,7 @@ export const ReviewSubmitStep = ({
             )}
           </div>
 
+          {/* Event Description */}
           <h4 className="font-medium mt-6 mb-4">Description</h4>
           <div className="bg-gray-50 p-4 rounded-lg whitespace-pre-line">
             {formData.description || "No description provided"}
@@ -116,6 +126,7 @@ export const ReviewSubmitStep = ({
         </div>
       </div>
 
+      {/* Error Message */}
       {error && (
         <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded">
           <div className="flex items-center">
@@ -125,6 +136,7 @@ export const ReviewSubmitStep = ({
         </div>
       )}
 
+      {/* Success Message */}
       {success && (
         <div className="bg-green-50 border-l-4 border-green-500 p-4 rounded">
           <div className="flex items-center">
@@ -134,7 +146,9 @@ export const ReviewSubmitStep = ({
         </div>
       )}
 
+      {/* Footer Buttons */}
       <div className="pt-6 flex justify-between">
+        {/* Back Button */}
         <button
           type="button"
           onClick={prevStep}
@@ -142,6 +156,8 @@ export const ReviewSubmitStep = ({
         >
           <span className="mr-2">←</span> Back
         </button>
+
+        {/* Submit Button */}
         <button
           type="submit"
           onClick={handleSubmit}
