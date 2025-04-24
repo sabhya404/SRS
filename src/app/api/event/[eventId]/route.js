@@ -1,14 +1,12 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/dbConnect/index";
 import Event from "@/model/Event.model";
-import User from "@/model/User.model";
 
 export async function GET(request, { params }) {
   await connectDB();
 
   // Extract eventId from params directly
-  // This is still supported in the current version
-  const { eventId } = await params;
+  const { eventId } = params;
 
   try {
     const event = await Event.findById(eventId).populate("organizer").lean();

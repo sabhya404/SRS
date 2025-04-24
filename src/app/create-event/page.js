@@ -13,7 +13,6 @@ export default async function CreateEventPage() {
 
   return (
     <div className="container">
-      <h1>Create New Event</h1>
       <CreateEventform isOrganizer={true} />
     </div>
   );
