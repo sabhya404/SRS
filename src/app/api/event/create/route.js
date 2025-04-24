@@ -83,14 +83,12 @@ export async function POST(request) {
     const savedEvent = await newEvent.save();
 
     // event status check
-    if (!user.organizerDetails || !user.organizerDetails.name) {
-      if (eventData.organizerDetails) {
-        user.organizerDetails = {
-          ...eventData.organizerDetails,
-          verificationStatus: "Pending",
-        };
-        await user.save();
-      }
+    if (!user.organizerDetails?.name && eventData.organizerDetails) {
+      user.organizerDetails = {
+        ...eventData.organizerDetails,
+        verificationStatus: "Pending",
+      };
+      await user.save();
     }
 
     return NextResponse.json(
