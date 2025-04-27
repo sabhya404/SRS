@@ -92,8 +92,11 @@ export async function POST(request) {
 
 export async function GET(request) {
   try {
-    const { searchParams } = new URL(request.url);
-    const eventId = searchParams.get("eventId");
+    await connectDB();
+    // Extract the eventId from params
+    const url = new URL(request.url);
+    const eventId = url.searchParams.get("eventId");
+    console.log("API called with eventId query param:", eventId);
 
     if (!eventId) {
       return NextResponse.json(
@@ -102,25 +105,43 @@ export async function GET(request) {
       );
     }
 
-    await connectDB();
+    // Validate ObjectId format
+    if (!mongoose.Types.ObjectId.isValid(eventId)) {
+      return NextResponse.json(
+        { success: false, message: "Invalid Event ID format" },
+        { status: 400 }
+      );
+    }
 
-    const venue = await Venue.findOne(new mongoose.Types.ObjectId(eventId));
+    // Find venue by eventId
+    const venue = await Venue.findOne({
+      eventId: new mongoose.Types.ObjectId(eventId),
+    }).lean();
 
     if (!venue) {
+      console.log(`No venue found for event ${eventId}`);
       return NextResponse.json(
-        { success: false, message: "Venue not found" },
+        { success: false, message: "Venue not found for this event" },
         { status: 404 }
       );
     }
 
+    // Get event details
+    const event = await Event.findById(eventId).lean();
+
+    // Return the venue with event data
     return NextResponse.json({
       success: true,
-      venue,
+      ...venue,
+      event,
     });
   } catch (error) {
-    console.error("Error fetching venue:", error);
+    console.error("API Error fetching venue:", error);
     return NextResponse.json(
-      { success: false, message: error.message || "Failed to fetch venue" },
+      {
+        success: false,
+        message: error.message || "Failed to fetch venue data",
+      },
       { status: 500 }
     );
   }

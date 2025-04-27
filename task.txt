@@ -1,0 +1,29 @@
+Remaining task 
+coordinate of seats  (modification required)
+user side seat layout (working ui part first design issue)
+search button and filter button --working now
+websocket integration for real time seat update (time taking)
+ticket booking route (in the last)
+event overview page and get events route --done
+integation of all pages (gud hai ji)
+authantication (middleware, ui, integation, nextauth config)
+param issue resolve
+
+Estimate time 
+Coordinate of seats | 0.5 day – Assuming data is ready, just UI placement
+
+User-side seat layout | 1 day – UI + logic for available/booked seats + 1 day(extra)
+ 
+Search and filter buttons | 0.5 day – UI + basic functionality
+ 
+WebSocket integration (real-time seat updates) | 1.5 - 2 days – Backend + frontend integration
+ 
+Ticket booking route | 1 day – Backend route + frontend form/response
+ 
+Event overview page + Get Events route | 1 day – Page layout + API
+ 
+Integration of all pages | 1 day – Routing and basic testing
+ 
+User authentication | 1 day – Login/Signup + session/token handling
+ 
+Organizer authentication | 1 day – Separate role-based login and access control
