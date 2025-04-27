@@ -102,6 +102,26 @@ export default function VenueBuilder({ eventId, event }) {
       console.log("All seats cleared successfully.");
     }
   };
+  const getUsedDimensions = () => {
+    let maxRow = -1;
+    let maxCol = -1;
+
+    // Find the last row and column with any assigned seat
+    venue.seats.forEach((row, rowIndex) => {
+      row.forEach((seat, colIndex) => {
+        if (seat.categoryId !== null) {
+          maxRow = Math.max(maxRow, rowIndex);
+          maxCol = Math.max(maxCol, colIndex);
+        }
+      });
+    });
+    if (maxRow === -1 || maxCol === -1) {
+      return { rows: 0, cols: 0 };
+    }
+
+    // Add 1 because indices are zero-based
+    return { rows: maxRow + 1, cols: maxCol + 1 };
+  };
 
   // Save venue configuration
   const saveVenue = async () => {
@@ -135,16 +155,30 @@ export default function VenueBuilder({ eventId, event }) {
         setIsLoading(false);
         return;
       }
+      const usedDimensions = getUsedDimensions();
 
+      // Check if any seats are assigned
+      if (usedDimensions.rows === 0 || usedDimensions.cols === 0) {
+        alert(
+          "No seats have been assigned. Please assign seats before saving."
+        );
+        return;
+      }
+
+      // Trim the seats array to only include rows and columns up to the last assigned seat
+      // This keeps all seats (including empty ones) up to the maximum dimensions needed
+      const trimmedSeats = venue.seats
+        .slice(0, usedDimensions.rows)
+        .map((row) => row.slice(0, usedDimensions.cols));
       // Create venue layout object
       const venueLayout = {
         eventId,
         shape: venue.shape,
         dimensions: {
-          rows: venue.rows,
-          cols: venue.cols,
+          rows: usedDimensions.rows,
+          cols: usedDimensions.cols,
         },
-        seats: venue.seats,
+        seats: trimmedSeats,
         categoryColors,
         subcategoryColors,
       };
