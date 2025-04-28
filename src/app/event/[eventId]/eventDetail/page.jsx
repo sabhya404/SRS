@@ -114,7 +114,7 @@ export default function EventDetailPage({ params }) {
   }, [event]);
 
   const handleBookTicket = () => {
-    router.push(`/book-ticket?eventId=${eventId}`);
+    router.push(`/event/${event._id}/BookTicket`);
   };
 
   // Show loading state
