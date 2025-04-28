@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { Clock, MapPin, Calendar, Users, Tag } from "lucide-react";
 import Image from "next/image";
+import GoogleMapView from "@/components/admincomponents/googlemapview.client"; // Update this path to match your project structure
 
 export default function EventDetailPage({ params }) {
   const router = useRouter();
@@ -21,6 +22,7 @@ export default function EventDetailPage({ params }) {
   const [event, setEvent] = useState(null);
   const [loading, setLoading] = useState(true);
   const [countdownFinished, setCountdownFinished] = useState(false);
+  const [mapCoordinates, setMapCoordinates] = useState(null);
 
   // Fetch event details when component mounts
   useEffect(() => {
@@ -34,6 +36,11 @@ export default function EventDetailPage({ params }) {
 
         if (response.ok) {
           setEvent(data);
+
+          // If this is not an online event, geocode the address
+          if (!data.isOnline && data.location) {
+            getCoordinatesFromAddress(data.location);
+          }
         } else {
           console.error("Failed to fetch event data");
         }
@@ -46,6 +53,39 @@ export default function EventDetailPage({ params }) {
 
     fetchEventDetails();
   }, [eventId]);
+
+  // Function to geocode address to coordinates
+  const getCoordinatesFromAddress = async (location) => {
+    try {
+      const { address, city, country } = location;
+      if (!address) {
+        setMapCoordinates({ lat: 40.7128, lng: -74.006 }); // Default to New York
+        return;
+      }
+
+      const fullAddress = `${address}, ${city || ""}, ${country || ""}`;
+      console.log("Geocoding address:", fullAddress);
+
+      // Call Google Maps Geocoding API
+      const response = await fetch(
+        `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(fullAddress)}&key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}`
+      );
+
+      const data = await response.json();
+
+      if (data.results && data.results.length > 0) {
+        const { lat, lng } = data.results[0].geometry.location;
+        console.log("Geocoded coordinates:", { lat, lng });
+        setMapCoordinates({ lat, lng });
+      } else {
+        console.error("Geocoding failed:", data.status);
+        setMapCoordinates({ lat: 40.7128, lng: -74.006 }); // Default to New York
+      }
+    } catch (error) {
+      console.error("Error geocoding address:", error);
+      setMapCoordinates({ lat: 40.7128, lng: -74.006 }); // Default to New York
+    }
+  };
 
   // Calculate time remaining for countdown timer
   useEffect(() => {
@@ -74,7 +114,7 @@ export default function EventDetailPage({ params }) {
   }, [event]);
 
   const handleBookTicket = () => {
-    router.push(`/book-ticket?eventId=${eventId}`);
+    router.push(`/event/${event._id}/BookTicket`);
   };
 
   // Show loading state
@@ -328,15 +368,18 @@ export default function EventDetailPage({ params }) {
                       <h2 className="text-2xl font-bold mb-4 text-gray-800">
                         Location
                       </h2>
-                      <div className="h-80 bg-gray-200 rounded-lg overflow-hidden relative">
-                        {/* Map placeholder */}
+                      <div className="h-60 bg-gray-200 rounded-lg overflow-hidden relative">
+                        {/* Only render map when coordinates are available */}
+                        {mapCoordinates && (
+                          <GoogleMapView
+                            lat={mapCoordinates.lat}
+                            lng={mapCoordinates.lng}
+                          />
+                        )}
                       </div>
                       <p className="mt-3 text-gray-600">
                         <MapPin className="inline-block mr-1" size={16} />
-                        {event.location?.name || ""}{" "}
-                        {event.location?.address
-                          ? `, ${event.location.address}`
-                          : ""}
+                        {event.location?.address || ""}{" "}
                         {event.location?.city ? `, ${event.location.city}` : ""}
                         {event.location?.country
                           ? `, ${event.location.country}`
