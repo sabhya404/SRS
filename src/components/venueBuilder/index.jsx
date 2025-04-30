@@ -11,7 +11,7 @@ import VenueGrid from "./VenueGrid";
 import Legend from "./Legend";
 import { useSeatManager } from "./hooks/useSeatManager";
 
-export default function VenueBuilder({ eventId, event }) {
+export default function VenueBuilder({ eventId, event, existingVenueData }) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
 
@@ -49,9 +49,37 @@ export default function VenueBuilder({ eventId, event }) {
     applyBulkSelection,
   } = useSeatManager(venue, setVenue, event, isBulkSelecting);
 
-  // Initialize seat grid
+  // Load existing venue data if available
   useEffect(() => {
-    if (venue.rows && venue.cols) {
+    if (existingVenueData) {
+      console.log("Loading existing venue data:", existingVenueData);
+
+      // Extract venue data from the API response
+      const { shape, dimensions, seats } = existingVenueData;
+
+      setVenue((prev) => ({
+        ...prev,
+        shape: shape || prev.shape,
+        rows: dimensions?.rows || prev.rows,
+        cols: dimensions?.cols || prev.cols,
+        seats: seats || prev.seats,
+      }));
+
+      // If there are seats, recalculate seat counts
+      if (seats && seats.length > 0) {
+        recalculateSeatCounts(seats);
+      }
+    }
+  }, [existingVenueData]);
+
+  // Initialize seat grid if no existing data and dimensions change
+  useEffect(() => {
+    // Only initialize if there are no existing seats
+    if (
+      venue.rows &&
+      venue.cols &&
+      (!venue.seats || venue.seats.length === 0)
+    ) {
       const initialSeats = Array(venue.rows)
         .fill()
         .map(() =>
@@ -102,6 +130,7 @@ export default function VenueBuilder({ eventId, event }) {
       console.log("All seats cleared successfully.");
     }
   };
+
   const getUsedDimensions = () => {
     let maxRow = -1;
     let maxCol = -1;
@@ -170,6 +199,7 @@ export default function VenueBuilder({ eventId, event }) {
       const trimmedSeats = venue.seats
         .slice(0, usedDimensions.rows)
         .map((row) => row.slice(0, usedDimensions.cols));
+
       // Create venue layout object
       const venueLayout = {
         eventId,
@@ -183,7 +213,7 @@ export default function VenueBuilder({ eventId, event }) {
         subcategoryColors,
       };
 
-      // Save to API
+      // Save to API - FIXED: Changed from /api/venue to /api/venues
       const response = await axios.post("/api/venue", venueLayout);
 
       if (response.data.success) {

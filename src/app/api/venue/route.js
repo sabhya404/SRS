@@ -1,4 +1,4 @@
-// app/api/venues/route.js
+// app/api/venue/route.js
 import { NextResponse } from "next/server";
 import mongoose from "mongoose";
 import Venue from "@/model/Venue.model";
@@ -146,49 +146,3 @@ export async function GET(request) {
     );
   }
 }
-
-/**
- * Delete a venue
- * DELETE /api/venues?eventId={id}
- */
-// export async function DELETE(request) {
-//   try {
-//     const { searchParams } = new URL(request.url);
-//     const eventId = searchParams.get("eventId");
-
-//     if (!eventId) {
-//       return NextResponse.json(
-//         { success: false, message: "Event ID is required" },
-//         { status: 400 }
-//       );
-//     }
-
-//     await connectToDatabase();
-
-//     // Find and delete the venue
-//     const venue = await Venue.findOneAndDelete({
-//       eventId: new mongoose.Types.ObjectId(eventId),
-//     });
-
-//     if (!venue) {
-//       return NextResponse.json(
-//         { success: false, message: "Venue not found" },
-//         { status: 404 }
-//       );
-//     }
-
-//     // Update the event
-//     await Event.findByIdAndUpdate(eventId, { hasVenueLayout: false });
-
-//     return NextResponse.json({
-//       success: true,
-//       message: "Venue deleted successfully",
-//     });
-//   } catch (error) {
-//     console.error("Error deleting venue:", error);
-//     return NextResponse.json(
-//       { success: false, message: error.message || "Failed to delete venue" },
-//       { status: 500 }
-//     );
-//   }
-// }

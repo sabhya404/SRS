@@ -11,29 +11,47 @@ import VenueBuilder from "@/components/venueBuilder/index";
 export default function VenueBuilderPage({ params }) {
   const router = useRouter();
   const [event, setEvent] = useState(null);
+  const [venueData, setVenueData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  // Fetch event data
+  // Fetch event data and venue data
   useEffect(() => {
-    const fetchEvent = async () => {
+    const fetchData = async () => {
       try {
-        const response = await axios.get(`/api/event/${params.eventId}`);
-        if (!response.data) {
+        setLoading(true);
+
+        // Fetch event data
+        const eventResponse = await axios.get(`/api/event/${params.eventId}`);
+        if (!eventResponse.data) {
           throw new Error("Event not found");
         }
-        setEvent(response.data);
+        setEvent(eventResponse.data);
+
+        // Fetch existing venue data if available
+        try {
+          const venueResponse = await axios.get(
+            `/api/venue?eventId=${params.eventId}`
+          );
+          if (venueResponse.data && venueResponse.data.success) {
+            setVenueData(venueResponse.data);
+            console.log("Existing venue data loaded:", venueResponse.data);
+          }
+        } catch (venueErr) {
+          // It's okay if venue doesn't exist yet
+          console.log("No existing venue data found, starting fresh");
+        }
       } catch (err) {
         setError(err.response?.data?.error || err.message);
         alert(err.response?.data?.error || err.message);
-        console.error("Error fetching event:", err);
+        console.error("Error fetching data:", err);
       } finally {
         setLoading(false);
       }
     };
 
     if (params.eventId) {
-      fetchEvent();
+      fetchData();
     }
   }, [params.eventId]);
 
@@ -75,7 +93,11 @@ export default function VenueBuilderPage({ params }) {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <VenueBuilder eventId={params.eventId} event={event} />
+      <VenueBuilder
+        eventId={params.eventId}
+        event={event}
+        existingVenueData={venueData}
+      />
     </div>
   );
 }
