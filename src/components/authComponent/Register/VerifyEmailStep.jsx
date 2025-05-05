@@ -1,6 +1,7 @@
 // File: VerifyEmailStep.tsx
 import React, { useState } from "react";
 import { CheckCircle2 } from "lucide-react";
+import axios from "axios";
 
 function VerifyEmailStep({
   newUser,
@@ -101,6 +102,5 @@ function VerifyEmailStep({
     </>
   );
 }
-import axios from "axios";
 
 export default VerifyEmailStep;
