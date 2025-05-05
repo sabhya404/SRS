@@ -10,6 +10,7 @@ export const config = {
     "/verify",
     "/eventList/:path*",
     "/create-event/:path*",
+    "/event/:path*/",
   ],
 };
 
@@ -28,11 +29,12 @@ export async function middleware(request) {
 
   // Redirect unauthenticated users away from protected routes
   if (
-    !token &&
-    (url.pathname.startsWith("/HomePage") ||
-      url.pathname.startsWith("/verify") ||
-      url.pathname.startsWith("/eventList") ||
-      url.pathname.startsWith("/create-event"))
+    (!token &&
+      (url.pathname.startsWith("/HomePage") ||
+        url.pathname.startsWith("/verify") ||
+        url.pathname.startsWith("/eventList") ||
+        url.pathname.startsWith("/create-event"))) ||
+    url.pathname.startsWith("/event/")
   ) {
     return NextResponse.redirect(new URL("/LandingPage", request.url));
   }

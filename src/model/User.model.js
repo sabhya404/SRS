@@ -69,7 +69,7 @@ const userSchema = new mongoose.Schema(
     },
     //for event listing
     //have to make changes according to give details
-    isOrganizer: { type: Boolean, default: false },
+    isOrganizer: { type: Boolean, default: true },
     organizerDetails: {
       name: { type: String },
       website: { type: String },

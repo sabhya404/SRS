@@ -148,10 +148,22 @@ const CreateEventForm = ({ isOrganizer }) => {
     try {
       // Make API request to create the event
       const response = await axios.post("/api/event/create", formData);
+      console.log("API Response:", response.data); // Debug line to check response
 
       if (response.data.success) {
-        setSuccess("Event created successfully!");
-        router.refresh();
+        // Get the event ID from the response
+        // Check if eventId exists in response or use an alternative property
+        const eventId =
+          response.data.eventId || response.data.event?.id || response.data.id;
+
+        if (eventId) {
+          // Redirect to the success page with the event ID
+          router.push(`/event/success?eventId=${eventId}`);
+        } else {
+          // If no event ID is found in the response, show an error
+          setError("Event created successfully, but no event ID was returned");
+          setIsSubmitting(false);
+        }
       }
     } catch (err) {
       const errorMsg = err.response?.data?.error || "Failed to create Event";
@@ -235,7 +247,7 @@ const CreateEventForm = ({ isOrganizer }) => {
         {/* Step Content */}
         <div className="p-6">
           <Stepper activeStep={activeStep} />
-          <form onSubmit={handleSubmit}>{steps[activeStep]}</form>
+          <form onSubmit={(e) => handleSubmit(e)}>{steps[activeStep]}</form>
         </div>
       </div>
     </div>
