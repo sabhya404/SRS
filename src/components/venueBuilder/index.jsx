@@ -72,10 +72,11 @@ export default function VenueBuilder({ eventId, event, existingVenueData }) {
     }
   }, [existingVenueData]);
 
-  // Initialize seat grid if no existing data and dimensions change
+  // Initialize seat grid only once when component mounts
   useEffect(() => {
-    // Only initialize if there are no existing seats
+    // Only initialize if there are no existing seats AND we have no existingVenueData
     if (
+      !existingVenueData &&
       venue.rows &&
       venue.cols &&
       (!venue.seats || venue.seats.length === 0)
@@ -92,6 +93,41 @@ export default function VenueBuilder({ eventId, event, existingVenueData }) {
             }))
         );
       setVenue((prev) => ({ ...prev, seats: initialSeats }));
+    }
+  }, []); // Only run once on component mount
+
+  // Update seat grid when dimensions change
+  useEffect(() => {
+    if (venue.rows && venue.cols) {
+      // Create a new seats array with the updated dimensions
+      const newSeats = Array(venue.rows)
+        .fill()
+        .map((_, rowIndex) =>
+          Array(venue.cols)
+            .fill()
+            .map((_, colIndex) => {
+              // Preserve existing seat data if it exists
+              if (
+                venue.seats &&
+                venue.seats[rowIndex] &&
+                venue.seats[rowIndex][colIndex]
+              ) {
+                return venue.seats[rowIndex][colIndex];
+              }
+              // Otherwise create a new empty seat
+              return {
+                categoryId: null,
+                subcategoryId: null,
+                status: "none",
+              };
+            })
+        );
+
+      // Update the venue with the new seats array
+      setVenue((prev) => ({ ...prev, seats: newSeats }));
+
+      // Recalculate seat counts
+      recalculateSeatCounts(newSeats);
     }
   }, [venue.rows, venue.cols]);
 
@@ -164,8 +200,9 @@ export default function VenueBuilder({ eventId, event, existingVenueData }) {
         const categoryCount = seatCounts[category._id]?.total || 0;
         if (categoryCount !== category.totalSeats) {
           alert(
-            `Category mismatch: ${category.name} requires exactly ${category.totalSeats} seats (${categoryCount} currently assigned)`
+            `Category mismatch: ${category.name} requires exactly ${category.totalSeats} seats (${categoryCount} currently assigned`
           );
+
           hasValidationErrors = true;
         }
 
@@ -173,8 +210,9 @@ export default function VenueBuilder({ eventId, event, existingVenueData }) {
           const subCount = seatCounts[category._id][sub._id] || 0;
           if (subCount !== sub.subSeats) {
             alert(
-              `Subcategory mismatch: ${sub.subName} requires exactly ${sub.subSeats} seats (${subCount} currently assigned)`
+              `Subcategory mismatch: ${sub.subName} requires exactly ${sub.subSeats} seats (${subCount} currently assigned`
             );
+
             hasValidationErrors = true;
           }
         }
@@ -213,7 +251,7 @@ export default function VenueBuilder({ eventId, event, existingVenueData }) {
         subcategoryColors,
       };
 
-      // Save to API - FIXED: Changed from /api/venue to /api/venues
+      // Save to API
       const response = await axios.post("/api/venue", venueLayout);
 
       if (response.data.success) {
@@ -221,7 +259,7 @@ export default function VenueBuilder({ eventId, event, existingVenueData }) {
 
         // Short delay before redirect for toast to be visible
         setTimeout(() => {
-          router.push(`/event/${eventId}`);
+          router.push(`/Dashboard`);
         }, 1500);
       } else {
         alert(`Error saving venue: ${response.data.message}`);
