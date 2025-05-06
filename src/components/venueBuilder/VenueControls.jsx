@@ -8,8 +8,7 @@ import { Button } from "@/components/ui/button";
 export default function VenueControls({
   venue,
   setVenue,
-  zoom,
-  setZoom,
+
   isBulkSelecting,
   setIsBulkSelecting,
 }) {
@@ -47,19 +46,6 @@ export default function VenueControls({
             onValueChange={([value]) =>
               setVenue((prev) => ({ ...prev, cols: value }))
             }
-          />
-        </div>
-
-        {/* Slider to control zoom level of the seat map */}
-        <div className="space-y-2">
-          <Label htmlFor="zoom">Zoom: {zoom.toFixed(1)}x</Label>
-          <Slider
-            id="zoom"
-            min={0.5}
-            max={2}
-            step={0.1}
-            value={[zoom]}
-            onValueChange={([value]) => setZoom(value)}
           />
         </div>
 

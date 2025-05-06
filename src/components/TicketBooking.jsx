@@ -50,6 +50,38 @@ export default function TicketBooking({ eventId }) {
         if (response.data.success === true) {
           setLoading(false);
           setVenue(response.data);
+
+          // Process categories and subcategories into a structured format for easy access
+          if (response.data.event && response.data.event.categories) {
+            const categories = response.data.event.categories.reduce(
+              (acc, category) => {
+                // Initialize the category
+                acc[category._id] = {
+                  name: category.name,
+                  price: category.price,
+                  subcategories: {},
+                };
+
+                // Add subcategories if they exist
+                if (
+                  category.subcategories &&
+                  category.subcategories.length > 0
+                ) {
+                  category.subcategories.forEach((subcategory) => {
+                    acc[category._id].subcategories[subcategory._id] = {
+                      name: subcategory.name,
+                      price: subcategory.price || category.price,
+                    };
+                  });
+                }
+
+                return acc;
+              },
+              {}
+            );
+
+            setCategoryInfo(categories);
+          }
         }
         setVenue(response.data);
 
@@ -119,12 +151,22 @@ export default function TicketBooking({ eventId }) {
 
     if (
       subcategoryId &&
+      categoryInfo[categoryId].subcategories &&
       categoryInfo[categoryId].subcategories[subcategoryId]
     ) {
-      return categoryInfo[categoryId].subcategories[subcategoryId].price;
+      // Return subcategory price with fallback to category price or 0
+      const subPrice =
+        categoryInfo[categoryId].subcategories[subcategoryId].price;
+      return subPrice !== undefined && subPrice !== null
+        ? subPrice
+        : categoryInfo[categoryId].price || 0;
     }
 
-    return categoryInfo[categoryId].price;
+    // Return category price or 0 if undefined
+    return categoryInfo[categoryId].price !== undefined &&
+      categoryInfo[categoryId].price !== null
+      ? categoryInfo[categoryId].price
+      : 0;
   };
 
   // Get the color for a seat
@@ -164,6 +206,22 @@ export default function TicketBooking({ eventId }) {
 
     if (isSelected) return "Selected";
     return "Available";
+  };
+
+  // Get category and subcategory name for a seat
+  const getSeatCategoryName = (seat) => {
+    if (!seat || !seat.categoryId || !categoryInfo[seat.categoryId]) {
+      return "Unknown";
+    }
+
+    const category = categoryInfo[seat.categoryId];
+    const categoryName = category?.name || "Unknown Category";
+
+    if (seat.subcategoryId && category?.subcategories[seat.subcategoryId]) {
+      return `${categoryName} - ${category.subcategories[seat.subcategoryId].name}`;
+    }
+
+    return categoryName;
   };
 
   // Proceed to booking
@@ -265,6 +323,16 @@ export default function TicketBooking({ eventId }) {
                       >
                         <span>
                           Row {seat.row + 1}, Seat {seat.col + 1}
+                          <br />
+                          <span className="text-xs text-gray-600">
+                            {categoryInfo[seat.categoryId]?.name || "Unknown"}
+                            {seat.subcategoryId &&
+                            categoryInfo[seat.categoryId]?.subcategories[
+                              seat.subcategoryId
+                            ]
+                              ? ` - ${categoryInfo[seat.categoryId].subcategories[seat.subcategoryId].name}`
+                              : ""}
+                          </span>
                         </span>
                         <span>${seat.price.toFixed(2)}</span>
                       </div>
@@ -293,6 +361,7 @@ export default function TicketBooking({ eventId }) {
             </CardFooter>
           </Card>
 
+          {/* Inside the Card component that renders the seat legend */}
           <Card className="mt-4">
             <CardHeader>
               <CardTitle>Seat Legend</CardTitle>
@@ -316,31 +385,77 @@ export default function TicketBooking({ eventId }) {
                   <span className="text-sm">Selected</span>
                 </div>
 
-                {/* Display categories */}
+                {/* Display categories and subcategories */}
                 {venue.event && venue.event.categories && (
                   <div className="mt-4 space-y-2">
                     <Label className="font-medium">Categories:</Label>
-                    <div className="space-y-1 mt-2">
+                    <div className="space-y-3 mt-2">
                       {venue.event.categories.map((category) => (
-                        <div
-                          key={category._id}
-                          className="flex items-center justify-between text-sm"
-                        >
-                          <div className="flex items-center gap-2">
-                            <div
-                              className="w-3 h-3 rounded-full"
-                              style={{
-                                backgroundColor:
-                                  venue.categoryColors[category._id],
-                              }}
-                            ></div>
-                            <span>{category.name}</span>
+                        <div key={category._id} className="space-y-1">
+                          <div className="flex items-center justify-between text-sm">
+                            <div className="flex items-center gap-2">
+                              <div
+                                className="w-3 h-3 rounded-full"
+                                style={{
+                                  backgroundColor:
+                                    venue.categoryColors[category._id],
+                                }}
+                              ></div>
+                              <span className="font-medium">
+                                {category.name}
+                              </span>
+                            </div>
+                            <Badge>
+                              {category.price !== undefined &&
+                              category.price !== null
+                                ? `$${category.price.toFixed(2)}`
+                                : "Varies"}
+                            </Badge>
                           </div>
-                          <Badge>
-                            {category.price
-                              ? `$${category.price.toFixed(2)}`
-                              : "Varies"}
-                          </Badge>
+
+                          {/* Render subcategories - Fixed to properly display subcategory name */}
+                          {category.subcategories &&
+                            category.subcategories.length > 0 && (
+                              <div className="ml-5 space-y-1 mt-1">
+                                {category.subcategories.map((subcategory) => {
+                                  // Safely get price with fallbacks
+                                  const subPrice =
+                                    subcategory.price !== undefined &&
+                                    subcategory.price !== null
+                                      ? subcategory.price
+                                      : category.price !== undefined &&
+                                          category.price !== null
+                                        ? category.price
+                                        : 0;
+
+                                  return (
+                                    <div
+                                      key={subcategory._id}
+                                      className="flex items-center justify-between text-xs"
+                                    >
+                                      <div className="flex items-center gap-2">
+                                        <div
+                                          className="w-2 h-2 rounded-full"
+                                          style={{
+                                            backgroundColor:
+                                              venue.subcategoryColors[
+                                                subcategory._id
+                                              ],
+                                          }}
+                                        ></div>
+                                        <span>{subcategory.name}</span>
+                                      </div>
+                                      <Badge
+                                        variant="outline"
+                                        className="text-xs"
+                                      >
+                                        ${subPrice.toFixed(2)}
+                                      </Badge>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
                         </div>
                       ))}
                     </div>
@@ -404,13 +519,7 @@ export default function TicketBooking({ eventId }) {
                               </TooltipTrigger>
                               <TooltipContent>
                                 <div className="text-xs font-medium">
-                                  {seat.categoryId
-                                    ? `${categoryInfo[seat.categoryId]?.name || "Unknown"} ${
-                                        seat.subcategoryId
-                                          ? `- ${categoryInfo[seat.categoryId]?.subcategories[seat.subcategoryId]?.name || ""}`
-                                          : ""
-                                      }`
-                                    : "No seat"}
+                                  {getSeatCategoryName(seat)}
                                 </div>
                                 <div className="text-xs">
                                   Row {rowIndex + 1}, Seat {colIndex + 1}

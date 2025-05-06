@@ -10,7 +10,7 @@ import {
 export default function VenueGrid({
   venue,
   event,
-  zoom,
+
   isBulkSelecting,
   bulkSelectionActive,
   handleSeatMouseDown,
@@ -42,7 +42,6 @@ export default function VenueGrid({
           <div
             className="grid gap-1 mx-auto"
             style={{
-              transform: `scale(${zoom})`,
               transformOrigin: "top left",
               width: "fit-content",
             }}

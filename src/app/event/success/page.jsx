@@ -141,24 +141,6 @@ const EventSuccessPage = () => {
                 <div className="text-sm font-mono font-medium">{eventId}</div>
               </div>
             </div>
-
-            {eventDetails && (
-              <>
-                <div className="flex items-center mb-3">
-                  <div className="bg-green-100 p-2 rounded-lg mr-3">
-                    <Calendar className="h-4 w-4 text-green-600" />
-                  </div>
-                  <div>
-                    <div className="text-xs font-medium text-green-500">
-                      EVENT NAME
-                    </div>
-                    <div className="text-sm font-medium">
-                      {eventDetails.title}
-                    </div>
-                  </div>
-                </div>
-              </>
-            )}
           </div>
 
           <div className="space-y-4">
@@ -171,7 +153,7 @@ const EventSuccessPage = () => {
             </button>
 
             <Link
-              href="/events"
+              href="/dashboard"
               className="block w-full py-3 px-4 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-medium rounded-lg text-center transition duration-300 ease-in-out"
             >
               Go to Events Dashboard

@@ -23,7 +23,6 @@ export default function VenueBuilder({ eventId, event, existingVenueData }) {
     seats: [],
   });
 
-  const [zoom, setZoom] = useState(1);
   const [isBulkSelecting, setIsBulkSelecting] = useState(false);
 
   // Extract seat management logic to a custom hook
@@ -314,8 +313,6 @@ export default function VenueBuilder({ eventId, event, existingVenueData }) {
           <VenueControls
             venue={venue}
             setVenue={setVenue}
-            zoom={zoom}
-            setZoom={setZoom}
             isBulkSelecting={isBulkSelecting}
             setIsBulkSelecting={setIsBulkSelecting}
           />
@@ -339,7 +336,6 @@ export default function VenueBuilder({ eventId, event, existingVenueData }) {
           <VenueGrid
             venue={venue}
             event={event}
-            zoom={zoom}
             isBulkSelecting={isBulkSelecting}
             bulkSelectionActive={bulkSelectionActive}
             handleSeatMouseDown={handleSeatMouseDown}
