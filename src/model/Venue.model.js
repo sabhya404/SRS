@@ -68,6 +68,19 @@ const venueSchema = new mongoose.Schema(
   }
 );
 
+//define a method to get the seat availability
+venueSchema.methods.getSeatStatus = function (row, col) {
+  if (
+    row < 0 ||
+    row >= this.dimensions.rows ||
+    col < 0 ||
+    col >= this.dimensions.cols
+  ) {
+    throw new Error("Invalid seat coordinates");
+  }
+  return this.seats[row][col].status;
+};
+
 const Venue = mongoose.models.Venue || mongoose.model("Venue", venueSchema);
 
 export default Venue;
