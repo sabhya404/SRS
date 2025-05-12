@@ -278,7 +278,7 @@ export default function TicketBooking({ eventId }) {
       seat.status === "booked" ||
       (tempReservedSeats[`${rowIndex}-${colIndex}`] &&
         tempReservedSeats[`${rowIndex}-${colIndex}`].userId !==
-          socketRef.current?.id)
+        socketRef.current?.id)
     ) {
       return;
     }
@@ -436,50 +436,54 @@ export default function TicketBooking({ eventId }) {
       // Format selected seats for the API
       const bookingData = {
         eventId,
+        event: venue.event, // Include event details for checkout
         seats: selectedSeats.map((seat) => ({
           row: seat.row,
           col: seat.col,
           categoryId: seat.categoryId,
           subcategoryId: seat.subcategoryId,
+          price: seat.price,
+          // Add category and subcategory name for better display
+          categoryName: categoryInfo[seat.categoryId]?.name || "Unknown",
+          subcategoryName: seat.subcategoryId && categoryInfo[seat.categoryId]?.subcategories[seat.subcategoryId]
+            ? categoryInfo[seat.categoryId].subcategories[seat.subcategoryId].name
+            : null
         })),
         totalPrice,
+        timestamp: Date.now(), // When the booking was initiated
+        expiry: Date.now() + (15 * 60 * 1000), // 15 minutes expiry
       };
 
-      // Note: This is where you would redirect to checkout or processing
-      console.log("Booking data:", bookingData);
+      // Save booking data to localStorage
+      localStorage.setItem('pendingBooking', JSON.stringify(bookingData));
 
-      // Notify server about booked seats
+      // Log for debugging
+      console.log("Booking data saved to localStorage:", bookingData);
+
+      // Notify server about temporary seat reservation status
       if (socketRef.current) {
-        selectedSeats.forEach((seat) => {
-          socketRef.current.emit("bookSeat", {
-            eventId,
-            row: seat.row,
-            col: seat.col,
-          });
-        });
+        // We could emit a specific event to extend the temporary reservation
+        // for checkout, but we'll keep the existing reservations for now
       }
 
-      // Redirect to checkout
-      // router.push(`/checkout?booking=${encodeURIComponent(JSON.stringify(bookingData))}`);
-
-      // Or post to an API endpoint
-      // const response = await axios.post('/api/bookings/create', bookingData);
-      // if (response.data.success) {
-      //   router.push(`/bookings/${response.data.bookingId}`);
-      // }
-
+      // Show success notification
       setNotification({
         type: "success",
-        title: "Booking initiated",
+        title: "Proceeding to checkout",
         message: `${selectedSeats.length} seats have been reserved for checkout.`,
         timestamp: Date.now(),
       });
+
+      // Redirect to checkout page after a brief delay to show the notification
+      setTimeout(() => {
+        window.location.href = "/checkout";
+      }, 1000);
     } catch (error) {
-      console.error("Error creating booking:", error);
+      console.error("Error processing booking:", error);
       setNotification({
         type: "error",
-        title: "Booking failed",
-        message: "Failed to create booking. Please try again.",
+        title: "Checkout failed",
+        message: "Failed to process your booking. Please try again.",
         timestamp: Date.now(),
       });
     }
@@ -522,13 +526,12 @@ export default function TicketBooking({ eventId }) {
       {/* Notification Alert */}
       {notification && (
         <Alert
-          className={`mb-4 ${
-            notification.type === "error"
+          className={`mb-4 ${notification.type === "error"
               ? "bg-red-50 border-red-200 text-red-800"
               : notification.type === "success"
                 ? "bg-green-50 border-green-200 text-green-800"
                 : "bg-blue-50 border-blue-200 text-blue-800"
-          }`}
+            }`}
         >
           <AlertDescription>
             <div className="font-medium">{notification.title}</div>
@@ -572,9 +575,9 @@ export default function TicketBooking({ eventId }) {
                           <span className="text-xs text-gray-600">
                             {categoryInfo[seat.categoryId]?.name || "Unknown"}
                             {seat.subcategoryId &&
-                            categoryInfo[seat.categoryId]?.subcategories[
+                              categoryInfo[seat.categoryId]?.subcategories[
                               seat.subcategoryId
-                            ]
+                              ]
                               ? ` - ${categoryInfo[seat.categoryId].subcategories[seat.subcategoryId].name}`
                               : ""}
                           </span>
@@ -652,7 +655,7 @@ export default function TicketBooking({ eventId }) {
                             </div>
                             <Badge>
                               {category.price !== undefined &&
-                              category.price !== null
+                                category.price !== null
                                 ? `$${category.price.toFixed(2)}`
                                 : "Varies"}
                             </Badge>
@@ -666,10 +669,10 @@ export default function TicketBooking({ eventId }) {
                                   // Safely get price with fallbacks
                                   const subPrice =
                                     subcategory.price !== undefined &&
-                                    subcategory.price !== null
+                                      subcategory.price !== null
                                       ? subcategory.price
                                       : category.price !== undefined &&
-                                          category.price !== null
+                                        category.price !== null
                                         ? category.price
                                         : 0;
 
@@ -684,7 +687,7 @@ export default function TicketBooking({ eventId }) {
                                           style={{
                                             backgroundColor:
                                               venue.subcategoryColors[
-                                                subcategory._id
+                                              subcategory._id
                                               ],
                                           }}
                                         ></div>
@@ -751,7 +754,7 @@ export default function TicketBooking({ eventId }) {
                         const isTempReserved =
                           tempReservedSeats[seatId] &&
                           tempReservedSeats[seatId].userId !==
-                            socketRef.current?.id;
+                          socketRef.current?.id;
                         const isBookable =
                           seat.categoryId &&
                           seat.status === "available" &&
