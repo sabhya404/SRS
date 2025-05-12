@@ -211,13 +211,14 @@ export default function TicketBooking({ eventId }) {
           setVenue(response.data);
 
           // Process categories and subcategories into a structured format for easy access
+          // Process categories and subcategories into a structured format for easy access
           if (response.data.event && response.data.event.categories) {
             const categories = response.data.event.categories.reduce(
               (acc, category) => {
                 // Initialize the category
                 acc[category._id] = {
                   name: category.name,
-                  price: category.price,
+                  price: category.price || 0,
                   subcategories: {},
                 };
 
@@ -228,8 +229,10 @@ export default function TicketBooking({ eventId }) {
                 ) {
                   category.subcategories.forEach((subcategory) => {
                     acc[category._id].subcategories[subcategory._id] = {
-                      name: subcategory.name,
-                      price: subcategory.price || category.price,
+                      // The backend now provides both name and subName
+                      name:
+                        subcategory.name || subcategory.subName || "Unknown",
+                      price: subcategory.price || category.price || 0,
                     };
                   });
                 }
@@ -402,6 +405,7 @@ export default function TicketBooking({ eventId }) {
   };
 
   // Get category and subcategory name for a seat
+  // The problem is in this function
   const getSeatCategoryName = (seat) => {
     if (!seat || !seat.categoryId || !categoryInfo[seat.categoryId]) {
       return "Unknown";
@@ -410,13 +414,12 @@ export default function TicketBooking({ eventId }) {
     const category = categoryInfo[seat.categoryId];
     const categoryName = category?.name || "Unknown Category";
 
-    if (seat.subcategoryId && category?.subcategories[seat.subcategoryId]) {
+    if (seat.subcategoryId && category?.subcategories?.[seat.subcategoryId]) {
       return `${categoryName} - ${category.subcategories[seat.subcategoryId].name}`;
     }
 
     return categoryName;
   };
-
   // Proceed to booking
   const proceedToBooking = async () => {
     if (selectedSeats.length === 0) {

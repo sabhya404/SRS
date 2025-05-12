@@ -1,9 +1,9 @@
 // app/api/venue/route.js
-import { NextResponse } from "next/server";
-import mongoose from "mongoose";
-import Venue from "@/model/Venue.model";
-import Event from "@/model/Event.model";
 import { connectDB } from "@/dbConnect/index";
+import Event from "@/model/Event.model";
+import Venue from "@/model/Venue.model";
+import mongoose from "mongoose";
+import { NextResponse } from "next/server";
 
 export async function POST(request) {
   try {
@@ -127,13 +127,40 @@ export async function GET(request) {
     }
 
     // Get event details
-    const event = await Event.findById(eventId).lean();
+    const event = await Event.findById(eventId)
+      .populate({
+        path: "organizer",
+        model: "User",
+        select: "username email organizerDetails",
+      })
+      .lean();
 
-    // Return the venue with event data
+    if (!event) {
+      return NextResponse.json(
+        { success: false, message: "Event not found" },
+        { status: 404 }
+      );
+    }
+
+    // Transform event data for frontend compatibility
+    const transformedEvent = {
+      ...event,
+      categories: event.categories.map((category) => ({
+        ...category,
+        subcategories:
+          category.subcategories?.map((subcategory) => ({
+            ...subcategory,
+            // Add name field that maps to subName for frontend compatibility
+            name: subcategory.subName,
+          })) || [],
+      })),
+    };
+
+    // Return the venue with transformed event data
     return NextResponse.json({
       success: true,
       ...venue,
-      event,
+      event: transformedEvent,
     });
   } catch (error) {
     console.error("API Error fetching venue:", error);
