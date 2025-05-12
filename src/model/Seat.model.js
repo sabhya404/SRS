@@ -4,25 +4,25 @@ import mongoose from "mongoose";
 const seatSchema = new mongoose.Schema({
   row: {
     type: Number,
-    required: true,
+    
     min: 0,
   },
   col: {
     type: Number,
-    required: true,
+    
     min: 0,
   },
   categoryId: {
     type: mongoose.Schema.Types.ObjectId,
 
-    required: true,
+    
   },
   subcategoryId: {
     type: mongoose.Schema.Types.ObjectId,
   },
   price: {
     type: Number,
-    required: true,
+    
     min: 0,
   },
 });
@@ -32,24 +32,24 @@ const seatBookingSchema = new mongoose.Schema(
     eventId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Event",
-      required: true,
+      
       index: true,
     },
     userId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
-      required: true,
+      
       index: true,
     },
     seats: [seatSchema],
     totalPrice: {
       type: Number,
-      required: true,
+      
       min: 0,
     },
     bookingNumber: {
       type: String,
-      required: true,
+      
       unique: true,
     },
     status: {

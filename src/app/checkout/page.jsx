@@ -30,6 +30,7 @@ export default function CheckoutPage() {
   });
   const [countdown, setCountdown] = useState(null);
   const [notification, setNotification] = useState(null);
+  const [processing, setProcessing] = useState(false);
 
   // Load booking data from localStorage and pre-fill user data from session
   useEffect(() => {
@@ -114,30 +115,36 @@ export default function CheckoutPage() {
     if (!booking) return;
     
     try {
+      setProcessing(true);
       setNotification({
         type: "info",
         title: "Processing",
-        message: "Processing your payment...",
+        message: "Processing your payment and confirming your seats...",
       });
       
-      // Here we'd call your payment processing API
-      // const response = await axios.post('/api/bookings', {
-      //   ...booking,
-      //   customer: formData,
-      //   userId: session?.user?.id, // Include user ID if authenticated
-      // });
+      // Prepare the booking data to send to the API
+      const apiBookingData = {
+        eventId: booking.eventId,
+        seats: booking.seats,
+        totalPrice: booking.totalPrice,
+        customer: formData,
+        userId: session?.user?.id || null
+      };
       
-      // For now, simulate a successful booking
-      setTimeout(() => {
+      // Call the API to save the booking
+      const response = await axios.post('/api/bookings', apiBookingData);
+      
+      if (response.data.success) {
         // Clear the pending booking from localStorage
         localStorage.removeItem("pendingBooking");
         
-        // Store confirmed booking reference for confirmation page
+        // Store confirmed booking reference for ticket page
         localStorage.setItem("confirmedBooking", JSON.stringify({
           ...booking,
           customer: formData,
-          userId: session?.user?.id || null, // Include user ID if authenticated
-          bookingNumber: "BK" + Math.floor(Math.random() * 1000000).toString().padStart(6, '0'),
+          userId: session?.user?.id || null,
+          bookingNumber: response.data.booking.bookingNumber,
+          bookingId: response.data.booking.id,
           confirmationDate: new Date().toISOString()
         }));
         
@@ -145,21 +152,24 @@ export default function CheckoutPage() {
         setNotification({
           type: "success",
           title: "Booking Confirmed",
-          message: "Your payment was successful. Redirecting to confirmation page...",
+          message: "Your payment was successful. Redirecting to your tickets...",
         });
         
-        // Redirect to confirmation page
+        // Redirect to ticket page with booking ID
         setTimeout(() => {
-          router.push('/booking-confirmation');
+          router.push(`/tickets/${response.data.booking.bookingNumber}`);
         }, 1500);
-      }, 2000);
+      } else {
+        throw new Error(response.data.message || "Booking failed");
+      }
     } catch (error) {
-      console.error("Payment processing error:", error);
+      console.error("Payment/booking error:", error);
       setNotification({
         type: "error",
-        title: "Payment Failed",
-        message: "There was an error processing your payment. Please try again.",
+        title: "Booking Failed",
+        message: error.response?.data?.message || error.message || "There was an error processing your booking. Please try again.",
       });
+      setProcessing(false);
     }
   };
 
@@ -371,6 +381,7 @@ export default function CheckoutPage() {
                         value={formData.name}
                         onChange={handleInputChange}
                         required
+                        disabled={processing}
                       />
                     </div>
                     
@@ -384,6 +395,7 @@ export default function CheckoutPage() {
                         value={formData.email}
                         onChange={handleInputChange}
                         required
+                        disabled={processing}
                       />
                     </div>
                   </div>
@@ -397,17 +409,27 @@ export default function CheckoutPage() {
                       value={formData.phone}
                       onChange={handleInputChange}
                       required
+                      disabled={processing}
                     />
                   </div>
                 </div>
                 
                 {/* Action Buttons */}
                 <div className="flex flex-col space-y-3 sm:flex-row sm:space-y-0 sm:space-x-3 justify-between mt-6">
-                  <Button type="button" variant="outline" onClick={handleCancel}>
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={handleCancel}
+                    disabled={processing}
+                  >
                     Cancel
                   </Button>
-                  <Button type="submit" className="w-full sm:w-[200px]">
-                    Complete Payment
+                  <Button 
+                    type="submit" 
+                    className="w-full sm:w-[200px]"
+                    disabled={processing}
+                  >
+                    {processing ? 'Processing...' : 'Complete Payment'}
                   </Button>
                 </div>
               </form>
