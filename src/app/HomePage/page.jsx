@@ -1,17 +1,49 @@
 "use client";
-import { useState } from "react";
-import { Calendar, Users, ArrowRight, LogOut } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Calendar, Users, ArrowRight, LogOut, Ticket } from "lucide-react";
 import Link from "next/link";
 import { signOut } from "next-auth/react";
+import { useRouter } from "next/navigation";
 
 // Main landing page component
 export default function LandingPage() {
   const [isHoveringBrowse, setIsHoveringBrowse] = useState(false);
   const [isHoveringOrganize, setIsHoveringOrganize] = useState(false);
+  const [latestTicket, setLatestTicket] = useState(null);
+  const router = useRouter();
 
   // Handle logout function
   const handleLogout = async () => {
     await signOut({ callbackUrl: "/" });
+  };
+
+  // Fetch user's latest ticket on component mount
+  useEffect(() => {
+    const fetchLatestTicket = async () => {
+      try {
+        const response = await fetch("/api/user/tickets/latest");
+        if (response.ok) {
+          const data = await response.json();
+          setLatestTicket(data);
+        }
+      } catch (error) {
+        console.error("Error fetching latest ticket:", error);
+      }
+    };
+
+    fetchLatestTicket();
+  }, []);
+
+  // Handle ticket button click - redirect to specific ticket route
+  const handleTicketClick = (e) => {
+    e.preventDefault();
+
+    // If we have the latest ticket, use its booking number, otherwise redirect to tickets list
+    if (latestTicket && latestTicket.bookingNumber) {
+      router.push(`/tickets/${latestTicket.bookingNumber}`);
+    } else {
+      router.push("/tickets");
+    }
   };
 
   return (
@@ -37,6 +69,15 @@ export default function LandingPage() {
             >
               Organize Event
             </Link>
+            {/* Modified My Tickets link with onClick handler */}
+            <a
+              href="/tickets"
+              onClick={handleTicketClick}
+              className="hover:text-indigo-600 transition-colors border-b-4 rounded-lg border-indigo-300 hover:border-indigo-100 px-4 py-2 flex items-center cursor-pointer"
+            >
+              <Ticket className="h-4 w-4 mr-1" />
+              My Tickets
+            </a>
             <button
               onClick={handleLogout}
               className="flex items-center space-x-1 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg transition-colors"
@@ -47,8 +88,6 @@ export default function LandingPage() {
           </div>
         </div>
       </nav>
-
-      {/* Rest of your landing page code remains the same */}
 
       {/* Hero Section */}
       <section className="container mx-auto px-6 pt-16 pb-24 text-center">
